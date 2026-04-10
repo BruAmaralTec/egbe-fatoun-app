@@ -1,0 +1,197 @@
+/* ========================================
+   globals.css
+   Design system Ẹgbẹ́ Fátọ́ún
+   Cores: branco, verde, amarelo, vermelho, preto
+   ======================================== */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Paleta principal — identidade do Ẹgbẹ́ */
+  --egbe-white: #FAF9F6;
+  --egbe-green: #1B6B3A;
+  --egbe-green-light: #2D8F4E;
+  --egbe-green-dark: #0E4423;
+  --egbe-yellow: #D4A017;
+  --egbe-yellow-light: #F0C75E;
+  --egbe-red: #B22222;
+  --egbe-red-light: #D44A4A;
+  --egbe-black: #1A1A1A;
+  --egbe-cream: #F5F0E8;
+
+  /* Tipografia */
+  --font-display: "Cormorant Garamond", serif;
+  --font-body: "DM Sans", sans-serif;
+
+  /* Espaçamento */
+  --container-max: 1200px;
+  --section-padding: 5rem 1.5rem;
+}
+
+/* ----------------------------------------
+   BASE
+   ---------------------------------------- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--egbe-black);
+  background: var(--egbe-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ----------------------------------------
+   TIPOGRAFIA
+   ---------------------------------------- */
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--egbe-black);
+}
+
+h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+h2 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); }
+h3 { font-size: clamp(1.3rem, 2.5vw, 1.8rem); }
+
+/* ----------------------------------------
+   COMPONENTES REUTILIZÁVEIS
+   ---------------------------------------- */
+
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--egbe-green);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--egbe-green-dark);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--egbe-green);
+  border: 2px solid var(--egbe-green);
+}
+.btn-secondary:hover {
+  background: var(--egbe-green);
+  color: white;
+}
+
+.btn-gold {
+  background: var(--egbe-yellow);
+  color: var(--egbe-black);
+}
+.btn-gold:hover {
+  background: var(--egbe-yellow-light);
+}
+
+/* ----------------------------------------
+   FORMULÁRIOS
+   ---------------------------------------- */
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  background: white;
+  transition: border-color 0.2s;
+}
+.input-field:focus {
+  outline: none;
+  border-color: var(--egbe-green);
+  box-shadow: 0 0 0 3px rgba(27, 107, 58, 0.1);
+}
+
+.label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 0.35rem;
+}
+
+/* ----------------------------------------
+   CARDS
+   ---------------------------------------- */
+
+.card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+.card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* ----------------------------------------
+   BADGES DE PERFIL
+   ---------------------------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge-sacerdote { background: var(--egbe-yellow-light); color: #6b4e00; }
+.badge-tecnico   { background: #dbeafe; color: #1e40af; }
+.badge-conselho  { background: #e0e7ff; color: #3730a3; }
+.badge-filho     { background: #d1fae5; color: var(--egbe-green-dark); }
+.badge-cliente   { background: #f3f4f6; color: #4b5563; }
+
+/* ----------------------------------------
+   STATUS DE INTEGRAÇÃO
+   ---------------------------------------- */
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-connected    { background: #22c55e; }
+.status-disconnected { background: #ef4444; }
+.status-pending      { background: var(--egbe-yellow); }
