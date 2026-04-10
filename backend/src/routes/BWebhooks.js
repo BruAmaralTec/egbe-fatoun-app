@@ -5,7 +5,7 @@
 
 const { Router } = require("express");
 const config = require("../config/BConfig");
-const { db } = require("../middleware/auth");
+const { db } = require("../middleware/BAuth");
 
 const router = Router();
 
