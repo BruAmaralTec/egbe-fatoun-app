@@ -42,7 +42,7 @@ app.use(express.json());
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    service: "egbe-fatogun-payments",
+    service: "egbe-fatoun-payments",
     environment: config.asaas.env,
     timestamp: new Date().toISOString(),
   });

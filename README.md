@@ -5,7 +5,7 @@ Aplicação web completa para o Ẹgbẹ́ Fátọ́ún, sob a liderança da Ìy
 ## 🏗 Estrutura do Projeto
 
 ```
-egbe-fatogun-app/
+egbe-fatoun-app/
 ├── frontend/          ← Next.js 14 (Vercel)
 │   ├── app/           ← Rotas (page.js = wrappers de 2 linhas)
 │   ├── components/    ← Componentes reais (prefixo F)

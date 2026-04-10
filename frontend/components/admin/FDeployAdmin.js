@@ -48,7 +48,7 @@ const ENV_GROUPS = [
     label: "Domínio e SEO",
     description: "Configurações do site público",
     vars: [
-      { key: "SITE_URL", label: "URL do site", sensitive: false, placeholder: "https://egbefatogun.com.br" },
+      { key: "SITE_URL", label: "URL do site", sensitive: false, placeholder: "https://egbefatoun.com.br" },
       { key: "SITE_NAME", label: "Nome do site", sensitive: false, placeholder: "Ẹgbẹ́ Fátọ́ún" },
       { key: "SITE_DESCRIPTION", label: "Descrição para SEO", sensitive: false },
     ],

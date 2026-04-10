@@ -1,5 +1,5 @@
 {
-  "name": "egbe-fatogun-api-payments",
+  "name": "egbe-fatoun-api-payments",
   "version": "1.0.0",
   "description": "API de pagamentos Asaas para Ẹgbẹ́ Fátọ́ún - Cloud Run",
   "main": "src/app.js",
