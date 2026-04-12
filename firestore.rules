@@ -17,11 +17,16 @@ service cloud.firestore {
         (isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "conselho");
     }
 
+    function isMidias() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "midias";
+    }
+
     // Usuários: cada um lê/escreve o próprio perfil
     match /users/{userId} {
       allow read, write: if isAuth() && request.auth.uid == userId;
       allow read, write: if isAdmin();
       allow read: if isConselho();
+      allow read: if isMidias();
     }
 
     // Eventos: qualquer autenticado lê, admin escreve
@@ -36,9 +41,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Notificações: usuário lê/escreve as próprias, admin lê todas
+    // Notificações
+    // - usuário lê e atualiza (marcar como lida) as próprias
+    // - conselho/admin/midias podem criar novas (para qualquer destinatário)
+    // - conselho/admin podem deletar
     match /notifications/{notifId} {
-      allow read, write: if isAuth();
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow read: if isConselho();
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isConselho() || isMidias();
+      allow delete: if isConselho();
     }
 
     // Config do sistema: todos leem, só tecnico escreve

@@ -14,6 +14,7 @@ import {
   collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
+import { notifyAll } from "@/lib/LNotifications";
 
 const EMPTY_EVENT = {
   title: "", description: "", date: "", endDate: "", location: "",
@@ -65,6 +66,10 @@ export default function FEventosAdmin() {
     if (!form.title) return alert("Título é obrigatório");
     setSaving(true);
     try {
+      const wasPublished = editing !== "new" && events.find((e) => e.id === editing)?.status === "published";
+      const nowPublished = form.status === "published";
+      const shouldNotify = nowPublished && !wasPublished;
+
       if (editing === "new") {
         const ref = await addDoc(collection(db, "events"), { ...form, createdAt: new Date() });
         setEvents((prev) => [{ id: ref.id, ...form }, ...prev]);
@@ -72,6 +77,18 @@ export default function FEventosAdmin() {
         await updateDoc(doc(db, "events", editing), { ...form, updatedAt: new Date() });
         setEvents((prev) => prev.map((e) => (e.id === editing ? { ...e, ...form } : e)));
       }
+
+      if (shouldNotify) {
+        try {
+          await notifyAll({
+            title: `Novo evento: ${form.title}`,
+            message: form.description?.slice(0, 200) || `Data: ${form.date || "em breve"}${form.location ? " · " + form.location : ""}`,
+            category: "event",
+            link: "/dashboard/eventos",
+          });
+        } catch (err) { console.warn("Falha ao enviar notificação:", err); }
+      }
+
       setEditing(null);
     } catch (err) { alert("Erro: " + err.message); }
     finally { setSaving(false); }

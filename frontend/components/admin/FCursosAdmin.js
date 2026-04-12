@@ -13,6 +13,7 @@ import {
   collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
+import { notifyAll } from "@/lib/LNotifications";
 
 const EMPTY_COURSE = {
   title: "", description: "", instructor: "", startDate: "", endDate: "",
@@ -56,6 +57,9 @@ export default function FCursosAdmin() {
     if (!form.title) return alert("Título é obrigatório");
     setSaving(true);
     try {
+      const prevStatus = editing !== "new" ? courses.find((c) => c.id === editing)?.status : null;
+      const shouldNotify = form.status === "open" && prevStatus !== "open";
+
       if (editing === "new") {
         const ref = await addDoc(collection(db, "courses"), { ...form, createdAt: new Date() });
         setCourses((prev) => [{ id: ref.id, ...form }, ...prev]);
@@ -63,6 +67,18 @@ export default function FCursosAdmin() {
         await updateDoc(doc(db, "courses", editing), { ...form, updatedAt: new Date() });
         setCourses((prev) => prev.map((c) => (c.id === editing ? { ...c, ...form } : c)));
       }
+
+      if (shouldNotify) {
+        try {
+          await notifyAll({
+            title: `Inscrições abertas: ${form.title}`,
+            message: form.description?.slice(0, 200) || `${form.instructor ? "Com " + form.instructor + " · " : ""}Início: ${form.startDate || "em breve"}`,
+            category: "course",
+            link: "/dashboard/cursos",
+          });
+        } catch (err) { console.warn("Falha ao enviar notificação:", err); }
+      }
+
       setEditing(null);
     } catch (err) { alert("Erro: " + err.message); }
     finally { setSaving(false); }
