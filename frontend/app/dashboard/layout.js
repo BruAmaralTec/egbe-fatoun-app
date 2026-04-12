@@ -52,7 +52,10 @@ export default function DashboardLayout({ children }) {
   if (!user) return null;
 
   const role = profile?.role || "cliente";
-  const allowedKeys = rolePermissions[role] || DEFAULT_PERMISSIONS[role] || [];
+  // Técnico SEMPRE vê todas as áreas, independente do config do Firestore
+  const allowedKeys = role === "tecnico"
+    ? ALL_AREAS.map((a) => a.key)
+    : (rolePermissions[role] || DEFAULT_PERMISSIONS[role] || []);
   const dynamicItems = ALL_AREAS.filter((area) => allowedKeys.includes(area.key));
   const visibleMenu = [...FIXED_AREAS, ...dynamicItems];
 

@@ -15,7 +15,7 @@ export const ALL_AREAS = [
   // Comunidade
   { key: "eventos", label: "Eventos", href: "/dashboard/eventos", icon: "🎉", group: "Comunidade" },
   { key: "cursos", label: "Cursos", href: "/dashboard/cursos", icon: "📚", group: "Comunidade" },
-  { key: "ose", label: "Histórico de Rituais", href: "/dashboard/ose", icon: "📿", group: "Comunidade" },
+  { key: "ose", label: "Calendário de Ọ̀sẹ̀", href: "/dashboard/ose", icon: "📿", group: "Comunidade" },
   { key: "biblioteca", label: "Biblioteca", href: "/dashboard/biblioteca", icon: "📖", group: "Comunidade" },
   { key: "dicionario", label: "Dicionário", href: "/dashboard/dicionario", icon: "🌐", group: "Comunidade" },
   { key: "pagamentos", label: "Pagamentos", href: "/dashboard/pagamentos", icon: "💳", group: "Comunidade" },
