@@ -1,0 +1,32 @@
+name: Deploy Firestore Rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'firebase.json'
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: egbe-fatoun-app
+          workload_identity_provider: projects/307666226706/locations/global/workloadIdentityPools/github/providers/egbe-fatoun-repo
+          service_account: firebase-adminsdk-fbsvc@egbe-fatoun-app.iam.gserviceaccount.com
+
+      - name: Deploy Firestore Rules
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only firestore:rules --project egbe-fatoun-app
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
