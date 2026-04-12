@@ -121,6 +121,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     profile,
+    setProfile,
     loading,
     isAdmin,
     isConselho,

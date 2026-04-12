@@ -5,6 +5,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/lib/LAuthContext";
 
 export default function FDashboardHome() {
@@ -48,7 +49,12 @@ export default function FDashboardHome() {
       {/* Dados do perfil */}
       {profile && (
         <div className="card" style={{ maxWidth: "500px" }}>
-          <h3 style={{ marginBottom: "1rem" }}>Seus dados</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h3 style={{ margin: 0 }}>Seus dados</h3>
+            <Link href="/dashboard/perfil" className="btn btn-secondary" style={{ fontSize: "0.82rem", padding: "0.35rem 0.75rem", textDecoration: "none" }}>
+              Editar
+            </Link>
+          </div>
           <table style={{ width: "100%", fontSize: "0.9rem" }}>
             <tbody>
               {[

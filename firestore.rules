@@ -3,21 +3,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Usuários: cada um lê/escreve o próprio perfil
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    function isAuth() {
+      return request.auth != null;
     }
 
-    // Admins (sacerdote/tecnico) podem ler/escrever qualquer usuário
-    match /users/{userId} {
-      allow read, write: if request.auth != null &&
+    function isAdmin() {
+      return isAuth() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["sacerdote", "tecnico"];
     }
 
-    // Conselho pode ler todos os usuários
+    function isConselho() {
+      return isAdmin() ||
+        (isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "conselho");
+    }
+
+    // Usuários: cada um lê/escreve o próprio perfil
     match /users/{userId} {
-      allow read: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "conselho";
+      allow read, write: if isAuth() && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+      allow read: if isConselho();
+    }
+
+    // Eventos: qualquer autenticado lê, admin escreve
+    match /events/{eventId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Cursos: qualquer autenticado lê, admin escreve
+    match /courses/{courseId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Notificações: usuário lê/escreve as próprias, admin lê todas
+    match /notifications/{notifId} {
+      allow read, write: if isAuth();
     }
   }
 }

@@ -17,8 +17,6 @@ const menuItems = {
   common: [
     { label: "Início", href: "/dashboard", icon: "🏠" },
     { label: "Meu Perfil", href: "/dashboard/perfil", icon: "👤" },
-  ],
-  filho: [
     { label: "Agenda de Ọ̀SẸ̀", href: "/dashboard/ose", icon: "📿" },
     { label: "Eventos", href: "/dashboard/eventos", icon: "🎉" },
     { label: "Cursos", href: "/dashboard/cursos", icon: "📚" },
@@ -63,7 +61,6 @@ export default function DashboardLayout({ children }) {
 
   const visibleMenu = [
     ...menuItems.common,
-    ...menuItems.filho,
     ...(isConselho ? menuItems.conselho : []),
     ...(isAdmin ? menuItems.admin : []),
   ];
