@@ -217,6 +217,15 @@ export default function FCursosAdmin() {
         {/* TAB: Conteúdo */}
         {tab === "content" && (
           <div className="card" style={{ maxWidth: "700px" }}>
+            {(() => {
+              const contentEditable = ["draft", "open", "in_progress"].includes(form.status);
+              return !contentEditable ? (
+                <div style={{ padding: "0.75rem 1rem", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.85rem", color: "#92400e" }}>
+                  🔒 O conteúdo deste curso está bloqueado pois o status é <strong>Finalizado</strong>. Para editar, volte o status para Rascunho, Inscrições Abertas ou Em Andamento na aba Detalhes.
+                </div>
+              ) : null;
+            })()}
+            <fieldset disabled={!["draft", "open", "in_progress"].includes(form.status)} style={{ border: "none", padding: 0, margin: 0, opacity: ["draft", "open", "in_progress"].includes(form.status) ? 1 : 0.5 }}>
             <h4 style={{ fontSize: "1rem", marginBottom: "0.75rem" }}>Módulos do curso</h4>
             {form.modules?.map((m, i) => (
               <div key={m.id || i} style={{ padding: "1rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "0.75rem" }}>
@@ -261,9 +270,10 @@ export default function FCursosAdmin() {
               <select className="input-field" value={newMaterial.type} onChange={(e) => setNewMaterial({ ...newMaterial, type: e.target.value })} style={{ width: "90px" }}><option value="pdf">PDF</option><option value="video">Vídeo</option><option value="audio">Áudio</option><option value="doc">Doc</option><option value="link">Link</option></select>
               <button className="btn btn-primary" onClick={() => { if (newMaterial.name) { setForm({ ...form, materials: [...(form.materials || []), { ...newMaterial, id: Date.now().toString() }] }); setNewMaterial({ name: "", url: "", type: "pdf" }); } }} style={{ padding: "0.4rem 0.8rem", fontSize: "0.82rem" }}>+</button>
             </div>
+            </fieldset>
 
             <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "1rem", marginTop: "1rem", borderTop: "1px solid #e5e7eb" }}>
-              <button onClick={handleSave} className="btn btn-primary" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</button>
+              <button onClick={handleSave} className="btn btn-primary" disabled={saving || !["draft", "open", "in_progress"].includes(form.status)}>{saving ? "Salvando..." : "Salvar"}</button>
             </div>
           </div>
         )}
