@@ -36,7 +36,7 @@ export default function FOseCalendar() {
   const [curYear, setCurYear] = useState(new Date().getFullYear());
   const [curMonth, setCurMonth] = useState(new Date().getMonth());
   const [selDay, setSelDay] = useState(null);
-  const [filter, setFilter] = useState(null);
+  const [filters, setFilters] = useState([]);
   const [dayData, setDayData] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -84,17 +84,48 @@ export default function FOseCalendar() {
 
   return (
     <div>
-      <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Agenda de Ọ̀SẸ̀</h1>
+      <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Calendário de Ọ̀sẹ̀</h1>
       <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
         Calendário litúrgico com o ciclo de 4 tipos de Osè — clique em um dia para ver os Orixás e anexar orações.
       </p>
 
-      {/* Filtros */}
-      <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-        <button onClick={() => setFilter(null)} className="btn" style={{ padding: "0.35rem 0.9rem", fontSize: "0.78rem", background: !filter ? "var(--egbe-green)" : "white", color: !filter ? "white" : "#666", border: "1.5px solid", borderColor: !filter ? "var(--egbe-green)" : "#e5e7eb" }}>Todos</button>
-        {OSE_TYPES.map(t => t.orixas.map(ox => (
-          <button key={ox} onClick={() => setFilter(filter === ox ? null : ox)} style={{ padding: "0.35rem 0.8rem", fontSize: "0.75rem", borderRadius: "20px", cursor: "pointer", border: "1.5px solid", fontWeight: 600, borderColor: filter === ox ? t.color : "#e5e7eb", background: filter === ox ? t.bg : "white", color: t.color, fontFamily: "inherit" }}>{ox}</button>
-        )))}
+      {/* Filtros multi-select */}
+      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Orixá</span>
+          {filters.length > 0 && (
+            <button onClick={() => setFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
+              Limpar ({filters.length})
+            </button>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          {OSE_TYPES.map((t) => t.orixas.map((ox) => {
+            const active = filters.includes(ox);
+            return (
+              <label key={ox} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
+                <span style={{
+                  width: "18px", height: "18px", borderRadius: "50%",
+                  border: `2px solid ${t.color}`,
+                  background: active ? t.color : "white",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.15s", flexShrink: 0,
+                }}>
+                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => setFilters(active ? filters.filter((f) => f !== ox) : [...filters, ox])}
+                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                />
+                <span style={{ fontSize: "0.82rem", color: active ? t.color : "#666", fontWeight: active ? 600 : 500 }}>
+                  {ox}
+                </span>
+              </label>
+            );
+          }))}
+        </div>
       </div>
 
       {/* Navegação */}
@@ -119,7 +150,7 @@ export default function FOseCalendar() {
             const ose = getOseType(date);
             const isToday = date.toDateString() === today.toDateString();
             const isSel = selDay === d;
-            const isDimmed = filter && !ose.orixas.includes(filter);
+            const isDimmed = filters.length > 0 && !ose.orixas.some((ox) => filters.includes(ox));
             return (
               <div key={d} onClick={() => setSelDay(d)} style={{
                 padding: "0.5rem 0.25rem", borderRadius: "8px", cursor: "pointer", textAlign: "center",
@@ -153,27 +184,34 @@ export default function FOseCalendar() {
 
           {selectedOse.orixas.map((ox, idx) => {
             const data = dayData[dayKey]?.[idx] || { link: "", audio: "", text: "" };
+            const hasContent = data.link || data.audio || data.text;
             return (
               <div key={ox} style={{ padding: "1rem", background: selectedOse.bg, borderRadius: "8px", marginBottom: "0.75rem" }}>
                 <h4 style={{ color: selectedOse.color, fontSize: "1rem", marginBottom: "0.75rem" }}>{ox}</h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                  <div>
-                    <label className="label">Link</label>
-                    <input className="input-field" type="url" placeholder="https://..." value={data.link} onChange={e => saveOseData(dayKey, idx, "link", e.target.value)} disabled={!isAdmin} />
+                {!hasContent ? (
+                  <p style={{ fontSize: "0.85rem", color: "#888", fontStyle: "italic" }}>
+                    Nenhum conteúdo cadastrado para este dia.
+                  </p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    {data.text && <p style={{ fontSize: "0.88rem", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{data.text}</p>}
+                    {data.audio && (
+                      <div>
+                        <audio controls src={data.audio} style={{ width: "100%", maxWidth: "400px" }}>Seu navegador não suporta áudio.</audio>
+                      </div>
+                    )}
+                    {data.link && <a href={data.link} target="_blank" rel="noopener" style={{ display: "inline-block", fontSize: "0.85rem", color: selectedOse.color, fontWeight: 600 }}>🔗 Abrir link ↗</a>}
                   </div>
-                  <div>
-                    <label className="label">URL do áudio (Drive, SoundCloud...)</label>
-                    <input className="input-field" type="url" placeholder="https://drive.google.com/..." value={data.audio} onChange={e => saveOseData(dayKey, idx, "audio", e.target.value)} disabled={!isAdmin} />
-                  </div>
-                  <div>
-                    <label className="label">Texto da oração</label>
-                    <textarea className="input-field" rows={3} placeholder={`Ẹ káàárọ̀ ${ox}...`} value={data.text} onChange={e => saveOseData(dayKey, idx, "text", e.target.value)} disabled={!isAdmin} style={{ resize: "vertical" }} />
-                  </div>
-                </div>
-                {data.link && <a href={data.link} target="_blank" rel="noopener" style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.82rem", color: selectedOse.color }}>Abrir link ↗</a>}
+                )}
               </div>
             );
           })}
+
+          {isAdmin && (
+            <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "#f0f7f3", borderRadius: "8px", border: "1px solid #d1fae5", fontSize: "0.82rem", color: "var(--egbe-green-dark)" }}>
+              ⚙️ Para editar os conteúdos (orações, áudios, links), acesse a <a href="/dashboard/admin/ose" style={{ color: "var(--egbe-green-dark)", fontWeight: 600, textDecoration: "underline" }}>Gestão do Calendário de Ọ̀sẹ̀</a>.
+            </div>
+          )}
         </div>
       )}
     </div>
