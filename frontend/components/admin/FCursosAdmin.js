@@ -14,9 +14,10 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { notifyAll } from "@/lib/LNotifications";
+import FRichTextEditor from "@/components/FRichTextEditor";
 
 const EMPTY_COURSE = {
-  title: "", subtitle: "", description: "", sacerdotisa: "",
+  title: "", subtitle: "", description: "", objective: "", sacerdotisa: "",
   days: [{ id: "1", date: "", startTime: "", endTime: "" }],
   price: 0, maxStudents: 0, status: "draft", visibility: "public",
   symplaEventId: "", streamYardUrl: "", youtubeVideoId: "", youtubePlaylistId: "",
@@ -125,7 +126,8 @@ export default function FCursosAdmin() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Título</label><input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex: Introdução ao Corpus de Ifá" /></div>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Subtítulo</label><input className="input-field" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder="Ex: Fundamentos para iniciantes" /></div>
-              <div style={{ gridColumn: "1 / -1" }}><label className="label">Descrição</label><textarea className="input-field" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={{ resize: "vertical" }} /></div>
+              <div style={{ gridColumn: "1 / -1" }}><label className="label">Descrição para Divulgação</label><textarea className="input-field" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Texto curto usado em cards e compartilhamento" style={{ resize: "vertical" }} /></div>
+              <div style={{ gridColumn: "1 / -1" }}><label className="label">Objetivo do Curso</label><textarea className="input-field" rows={3} value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} placeholder="O que o aluno vai aprender / competências desenvolvidas" style={{ resize: "vertical" }} /></div>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Sacerdotisa(e)</label><input className="input-field" value={form.sacerdotisa} onChange={(e) => setForm({ ...form, sacerdotisa: e.target.value })} placeholder="Nome da Sacerdotisa ou Sacerdote" /></div>
               <div><label className="label">Valor (R$)</label><input className="input-field" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} /></div>
               <div><label className="label">Vagas (0 = ilimitado)</label><input className="input-field" type="number" min="0" value={form.maxStudents} onChange={(e) => setForm({ ...form, maxStudents: parseInt(e.target.value) || 0 })} /></div>
@@ -217,16 +219,34 @@ export default function FCursosAdmin() {
           <div className="card" style={{ maxWidth: "700px" }}>
             <h4 style={{ fontSize: "1rem", marginBottom: "0.75rem" }}>Módulos do curso</h4>
             {form.modules?.map((m, i) => (
-              <div key={m.id || i} style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.75rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "0.5rem" }}>
-                <div><span style={{ fontWeight: 600, fontSize: "0.88rem" }}>{i + 1}. {m.title}</span>{m.description && <p style={{ color: "#888", fontSize: "0.8rem" }}>{m.description}</p>}</div>
-                <button onClick={() => setForm({ ...form, modules: form.modules.filter((_, idx) => idx !== i) })} style={{ background: "none", border: "none", color: "var(--egbe-red)", cursor: "pointer" }}>✕</button>
+              <div key={m.id || i} style={{ padding: "1rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "0.75rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                  <span style={{ fontWeight: 600, color: "var(--egbe-green-dark)", fontSize: "0.85rem" }}>Módulo {i + 1}</span>
+                  <input
+                    className="input-field"
+                    value={m.title}
+                    onChange={(e) => { const mods = [...form.modules]; mods[i] = { ...mods[i], title: e.target.value }; setForm({ ...form, modules: mods }); }}
+                    placeholder="Título do módulo"
+                    style={{ flex: 1 }}
+                  />
+                  <button onClick={() => setForm({ ...form, modules: form.modules.filter((_, idx) => idx !== i) })} style={{ background: "none", border: "1.5px solid #fecaca", borderRadius: "6px", color: "var(--egbe-red)", cursor: "pointer", padding: "0.4rem 0.7rem", fontSize: "0.85rem" }}>✕</button>
+                </div>
+                <label style={{ fontSize: "0.78rem", color: "#888", display: "block", marginBottom: "0.3rem" }}>Descrição do módulo</label>
+                <FRichTextEditor
+                  value={m.description}
+                  onChange={(html) => { const mods = [...form.modules]; mods[i] = { ...mods[i], description: html }; setForm({ ...form, modules: mods }); }}
+                  placeholder="Descreva o conteúdo, objetivos e temas do módulo..."
+                  minHeight="120px"
+                />
               </div>
             ))}
-            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
-              <input className="input-field" placeholder="Título do módulo" value={newModule.title} onChange={(e) => setNewModule({ ...newModule, title: e.target.value })} style={{ flex: 2 }} />
-              <input className="input-field" placeholder="Descrição" value={newModule.description} onChange={(e) => setNewModule({ ...newModule, description: e.target.value })} style={{ flex: 3 }} />
-              <button className="btn btn-primary" onClick={() => { if (newModule.title) { setForm({ ...form, modules: [...(form.modules || []), { ...newModule, id: Date.now().toString() }] }); setNewModule({ title: "", description: "" }); } }} style={{ padding: "0.4rem 0.8rem", fontSize: "0.82rem" }}>+</button>
-            </div>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setForm({ ...form, modules: [...(form.modules || []), { id: Date.now().toString(), title: "", description: "" }] })}
+              style={{ width: "100%", marginBottom: "1.5rem", padding: "0.6rem", fontSize: "0.88rem" }}
+            >
+              + Adicionar módulo
+            </button>
 
             <h4 style={{ fontSize: "1rem", marginBottom: "0.75rem" }}>Materiais de apoio</h4>
             {form.materials?.map((m, i) => (

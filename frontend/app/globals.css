@@ -131,6 +131,15 @@ input, textarea, select, [contenteditable] {
   user-select: text;
 }
 
+.rich-editor-content:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+.rich-editor-content ul { padding-left: 1.5rem; list-style: disc; }
+.rich-editor-content ol { padding-left: 1.5rem; list-style: decimal; }
+.rich-editor-content p { margin: 0.3rem 0; }
+
 .input-field {
   width: 100%;
   padding: 0.75rem 1rem;
