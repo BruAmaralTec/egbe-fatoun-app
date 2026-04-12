@@ -124,6 +124,13 @@ h3 { font-size: clamp(1.3rem, 2.5vw, 1.8rem); }
    FORMULÁRIOS
    ---------------------------------------- */
 
+input, textarea, select, [contenteditable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 .input-field {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -133,6 +140,8 @@ h3 { font-size: clamp(1.3rem, 2.5vw, 1.8rem); }
   font-size: 0.95rem;
   background: white;
   transition: border-color 0.2s;
+  -webkit-user-select: text;
+  user-select: text;
 }
 .input-field:focus {
   outline: none;

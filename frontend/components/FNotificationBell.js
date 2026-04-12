@@ -36,9 +36,10 @@ export default function FNotificationBell() {
     load();
   }, [user]);
 
-  // Close on click outside — só fecha se o clique começou E terminou fora
-  // (permite seleção de texto que atravessa a borda do dropdown sem fechar)
+  // Close on click outside — só registra quando o dropdown está aberto,
+  // e só fecha se o clique começou E terminou fora (permite seleção de texto)
   useEffect(() => {
+    if (!showDropdown) return;
     let startedOutside = false;
     function handleMouseDown(e) {
       startedOutside = !!(ref.current && !ref.current.contains(e.target));
@@ -55,7 +56,7 @@ export default function FNotificationBell() {
       document.removeEventListener("mousedown", handleMouseDown);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, []);
+  }, [showDropdown]);
 
   const unread = notifications.length;
 
