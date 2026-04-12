@@ -9,7 +9,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy } from "firebase/firestore";
+import { initializeApp, getApp, getApps } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { db } from "@/lib/LFirebase";
 
 import { ROLES } from "@/lib/LPermissions";
@@ -26,6 +28,9 @@ export default function FUsuariosAdmin() {
   const [saving, setSaving] = useState(false);
   const [addingIniciacao, setAddingIniciacao] = useState(false);
   const [novaIniciacao, setNovaIniciacao] = useState({ tipo: "orisa", nome: "", data: "", oruko: "" });
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({ displayName: "", email: "", password: "", role: "cliente" });
+  const [createSaving, setCreateSaving] = useState(false);
 
   useEffect(() => { if (profile && !isAdmin) router.push("/dashboard"); }, [profile, isAdmin, router]);
 
@@ -69,6 +74,38 @@ export default function FUsuariosAdmin() {
 
   function removeIniciacao(id) { setForm({ ...form, initiacoes: form.initiacoes.filter((i) => i.id !== id) }); }
 
+  async function handleCreate() {
+    const { displayName, email, password, role } = createForm;
+    if (!displayName || !email || !password) return alert("Preencha nome, email e senha.");
+    if (password.length < 6) return alert("Senha deve ter pelo menos 6 caracteres.");
+    setCreateSaving(true);
+    try {
+      // Instância secundária pra não deslogar o admin
+      const primary = getApp();
+      const secondaryName = "user-creation-" + Date.now();
+      const secondary = getApps().find((a) => a.name === secondaryName) || initializeApp(primary.options, secondaryName);
+      const secondaryAuth = getAuth(secondary);
+
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+      await setDoc(doc(db, "users", cred.user.uid), {
+        email, displayName, role,
+        cpf: "", phone: "", oruko: "",
+        initiacoes: [], observacoes: "",
+        createdAt: new Date(),
+      });
+      await signOut(secondaryAuth);
+
+      setUsers((prev) => [{ id: cred.user.uid, email, displayName, role, initiacoes: [] }, ...prev]);
+      setCreateForm({ displayName: "", email: "", password: "", role: "cliente" });
+      setCreating(false);
+    } catch (err) {
+      const msg = err.code === "auth/email-already-in-use" ? "Este email já está cadastrado." : err.message;
+      alert("Erro ao criar: " + msg);
+    } finally {
+      setCreateSaving(false);
+    }
+  }
+
   async function handleDelete(userId) {
     if (!confirm("Tem certeza que deseja remover este usuário?")) return;
     await deleteDoc(doc(db, "users", userId));
@@ -85,11 +122,14 @@ export default function FUsuariosAdmin() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Gerenciar Usuários</h1>
           <p style={{ color: "#666", fontSize: "0.9rem" }}>{users.length} usuários cadastrados</p>
         </div>
+        <button onClick={() => setCreating(true)} className="btn btn-primary" style={{ padding: "0.6rem 1.25rem" }}>
+          + Novo usuário
+        </button>
       </div>
 
       {/* Busca e filtros */}
@@ -197,6 +237,46 @@ export default function FUsuariosAdmin() {
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
               <button onClick={() => setEditing(null)} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem" }}>Cancelar</button>
               <button onClick={handleSave} className="btn btn-primary" disabled={saving} style={{ padding: "0.6rem 1.25rem" }}>{saving ? "Salvando..." : "Salvar alterações"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de criação */}
+      {creating && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+          onMouseDown={(e) => { e.currentTarget.dataset.mdTarget = e.target === e.currentTarget ? "backdrop" : "content"; }}
+          onMouseUp={(e) => { if (e.currentTarget.dataset.mdTarget === "backdrop" && e.target === e.currentTarget) setCreating(false); }}
+        >
+          <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "500px", padding: "2rem" }}>
+            <h2 style={{ fontSize: "1.3rem", marginBottom: "1.5rem" }}>Novo Usuário</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
+              <div>
+                <label className="label">Nome completo</label>
+                <input className="input-field" value={createForm.displayName} onChange={(e) => setCreateForm({ ...createForm, displayName: e.target.value })} placeholder="Nome do usuário" />
+              </div>
+              <div>
+                <label className="label">Email</label>
+                <input className="input-field" type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder="email@exemplo.com" />
+              </div>
+              <div>
+                <label className="label">Senha inicial</label>
+                <input className="input-field" type="text" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} placeholder="Mínimo 6 caracteres" />
+                <p style={{ fontSize: "0.72rem", color: "#888", marginTop: "0.25rem" }}>O usuário poderá alterar depois de logar.</p>
+              </div>
+              <div>
+                <label className="label">Perfil</label>
+                <select className="input-field" value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}>
+                  {ROLES.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+              <button onClick={() => setCreating(false)} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem" }} disabled={createSaving}>Cancelar</button>
+              <button onClick={handleCreate} className="btn btn-primary" disabled={createSaving} style={{ padding: "0.6rem 1.25rem" }}>
+                {createSaving ? "Criando..." : "Criar usuário"}
+              </button>
             </div>
           </div>
         </div>
