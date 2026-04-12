@@ -25,7 +25,7 @@ export default function FUsuariosAdmin() {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [addingIniciacao, setAddingIniciacao] = useState(false);
-  const [novaIniciacao, setNovaIniciacao] = useState({ nome: "", data: "", descricao: "" });
+  const [novaIniciacao, setNovaIniciacao] = useState({ tipo: "orisa", nome: "", data: "", oruko: "" });
 
   useEffect(() => { if (profile && !isAdmin) router.push("/dashboard"); }, [profile, isAdmin, router]);
 
@@ -63,7 +63,7 @@ export default function FUsuariosAdmin() {
   function addIniciacao() {
     if (!novaIniciacao.nome) return;
     setForm({ ...form, initiacoes: [...form.initiacoes, { ...novaIniciacao, id: Date.now().toString() }] });
-    setNovaIniciacao({ nome: "", data: "", descricao: "" });
+    setNovaIniciacao({ tipo: "orisa", nome: "", data: "", oruko: "" });
     setAddingIniciacao(false);
   }
 
@@ -159,15 +159,28 @@ export default function FUsuariosAdmin() {
               </div>
               {form.initiacoes?.length > 0 ? form.initiacoes.map((ini) => (
                 <div key={ini.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 0.75rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "0.5rem" }}>
-                  <div><span style={{ fontWeight: 600, fontSize: "0.88rem" }}>{ini.nome}</span>{ini.data && <span style={{ color: "#888", fontSize: "0.8rem", marginLeft: "0.5rem" }}>— {ini.data}</span>}{ini.descricao && <p style={{ color: "#666", fontSize: "0.8rem", marginTop: "0.15rem" }}>{ini.descricao}</p>}</div>
+                  <div>
+                    {ini.tipo && <span style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem", borderRadius: "4px", background: ini.tipo === "ifa" ? "#fef3c7" : "#dbeafe", color: ini.tipo === "ifa" ? "#92400e" : "#1e40af", fontWeight: 600, marginRight: "0.5rem", textTransform: "uppercase" }}>{ini.tipo === "ifa" ? "Ifá" : "Òrìṣà"}</span>}
+                    <span style={{ fontWeight: 600, fontSize: "0.88rem" }}>{ini.nome}</span>
+                    {ini.data && <span style={{ color: "#888", fontSize: "0.8rem", marginLeft: "0.5rem" }}>— {ini.data}</span>}
+                    {ini.oruko && <p style={{ color: "var(--egbe-green-dark)", fontSize: "0.8rem", marginTop: "0.15rem", fontStyle: "italic" }}>Orúkọ: {ini.oruko}</p>}
+                  </div>
                   <button onClick={() => removeIniciacao(ini.id)} style={{ background: "none", border: "none", color: "var(--egbe-red)", cursor: "pointer" }}>✕</button>
                 </div>
               )) : <p style={{ color: "#ccc", fontSize: "0.85rem", fontStyle: "italic" }}>Nenhuma iniciação registrada.</p>}
               {addingIniciacao && (
                 <div style={{ marginTop: "0.75rem", padding: "1rem", background: "#eff6ff", borderRadius: "8px", border: "1px solid #bfdbfe" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                    <div>
+                      <label className="label">Tipo de iniciação</label>
+                      <select className="input-field" value={novaIniciacao.tipo} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, tipo: e.target.value })}>
+                        <option value="orisa">Òrìṣà</option>
+                        <option value="ifa">Ifá</option>
+                      </select>
+                    </div>
                     <div><label className="label">Nome da iniciação</label><input className="input-field" value={novaIniciacao.nome} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, nome: e.target.value })} placeholder="Ex: Ìṣẹ̀fá, Ìbọ̀rìṣà..." /></div>
-                    <div><label className="label">Data</label><input className="input-field" type="date" value={novaIniciacao.data} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, data: e.target.value })} /></div>
+                    <div><label className="label">Data da iniciação</label><input className="input-field" type="date" value={novaIniciacao.data} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, data: e.target.value })} /></div>
+                    <div><label className="label">Orúkọ da iniciação</label><input className="input-field" value={novaIniciacao.oruko} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, oruko: e.target.value.slice(0, 100) })} placeholder="Nome recebido na iniciação" maxLength={100} /></div>
                   </div>
                   <div style={{ display: "flex", gap: "0.5rem" }}>
                     <button className="btn btn-primary" onClick={addIniciacao} style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}>Adicionar</button>

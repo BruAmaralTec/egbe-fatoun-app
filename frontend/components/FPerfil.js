@@ -151,11 +151,22 @@ export default function FPerfil() {
           <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Iniciações na casa</h3>
           {initiacoes.length > 0 ? initiacoes.map((ini, i) => (
             <div key={ini.id || i} style={{ padding: "0.75rem", background: "#f0f7f3", borderRadius: "8px", border: "1px solid #d1fae5", marginBottom: "0.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontWeight: 600, color: "var(--egbe-green-dark)" }}>{ini.nome}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {ini.tipo && (
+                    <span style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem", borderRadius: "4px", background: ini.tipo === "ifa" ? "#fef3c7" : "#dbeafe", color: ini.tipo === "ifa" ? "#92400e" : "#1e40af", fontWeight: 600, textTransform: "uppercase" }}>
+                      {ini.tipo === "ifa" ? "Ifá" : "Òrìṣà"}
+                    </span>
+                  )}
+                  <span style={{ fontWeight: 600, color: "var(--egbe-green-dark)" }}>{ini.nome}</span>
+                </div>
                 {ini.data && <span style={{ fontSize: "0.8rem", color: "#888" }}>{ini.data}</span>}
               </div>
-              {ini.descricao && <p style={{ fontSize: "0.82rem", color: "#666", marginTop: "0.2rem" }}>{ini.descricao}</p>}
+              {ini.oruko && (
+                <p style={{ fontSize: "0.82rem", color: "var(--egbe-green-dark)", marginTop: "0.25rem", fontStyle: "italic" }}>
+                  Orúkọ: {ini.oruko}
+                </p>
+              )}
             </div>
           )) : (
             <p style={{ color: "#ccc", fontStyle: "italic", fontSize: "0.88rem" }}>Nenhuma iniciação registrada.</p>
