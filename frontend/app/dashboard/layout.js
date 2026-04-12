@@ -130,7 +130,7 @@ export default function DashboardLayout({ children }) {
 
       {/* CONTEÚDO */}
       <div className="dashboard-content" style={{ marginLeft: "260px", flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", minWidth: 0 }}>
-        <header style={{ padding: "0.75rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", background: "white", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 30 }}>
+        <header style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", background: "white", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 30 }}>
           <button
             onClick={() => setMobileOpen(true)}
             className="mobile-menu-btn"
@@ -143,7 +143,7 @@ export default function DashboardLayout({ children }) {
             <FNotificationBell />
           </div>
         </header>
-        <main style={{ flex: 1, padding: "1rem", background: "#f8f9fa" }}>
+        <main style={{ flex: 1, padding: "1.5rem", background: "#f8f9fa" }}>
           {children}
         </main>
       </div>
