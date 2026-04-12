@@ -1,55 +1,43 @@
 // ========================================
 // app/dashboard/layout.js
-// Layout do dashboard com sidebar completa
-// Inclui todos os módulos do protótipo
+// Layout do dashboard com sidebar dinâmica
+// Permissões lidas do Firestore
 // ========================================
 
 "use client";
 
 import { useAuth } from "@/lib/LAuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/LFirebase";
 import Link from "next/link";
 import FNotificationBell from "@/components/FNotificationBell";
-
-// Menu items por perfil
-const menuItems = {
-  common: [
-    { label: "Início", href: "/dashboard", icon: "🏠" },
-    { label: "Meu Perfil", href: "/dashboard/perfil", icon: "👤" },
-    { label: "Agenda de Ọ̀SẸ̀", href: "/dashboard/ose", icon: "📿" },
-    { label: "Eventos", href: "/dashboard/eventos", icon: "🎉" },
-    { label: "Cursos", href: "/dashboard/cursos", icon: "📚" },
-    { label: "Biblioteca", href: "/dashboard/biblioteca", icon: "📖" },
-    { label: "Dicionário", href: "/dashboard/dicionario", icon: "🌐" },
-    { label: "Pagamentos", href: "/dashboard/pagamentos", icon: "💳" },
-  ],
-  conselho: [
-    { label: "Filhos da Casa", href: "/dashboard/membros", icon: "👥" },
-  ],
-  admin: [
-    { label: "Gerenciar Eventos", href: "/dashboard/admin/eventos", icon: "📅" },
-    { label: "Gerenciar Cursos", href: "/dashboard/admin/cursos", icon: "🎓" },
-    { label: "Gerenciar Usuários", href: "/dashboard/admin/usuarios", icon: "⚙️" },
-    { label: "Certificados", href: "/dashboard/admin/certificados", icon: "📜" },
-    { label: "Financeiro", href: "/dashboard/admin/financeiro", icon: "💰" },
-    { label: "Gestão de Rituais", href: "/dashboard/admin/rituais", icon: "🕯️" },
-    { label: "Integrações", href: "/dashboard/admin/integracoes", icon: "🔗" },
-    { label: "Configurações", href: "/dashboard/admin/configuracoes", icon: "⚙️" },
-    { label: "Deploy & Config", href: "/dashboard/admin/deploy", icon: "🚀" },
-  ],
-};
+import { FIXED_AREAS, ALL_AREAS, DEFAULT_PERMISSIONS } from "@/lib/LPermissions";
 
 export default function DashboardLayout({ children }) {
-  const { user, profile, loading, logout, isAdmin, isConselho } = useAuth();
+  const { user, profile, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [rolePermissions, setRolePermissions] = useState(null);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
   }, [user, loading, router]);
 
-  if (loading) {
+  useEffect(() => {
+    async function loadPermissions() {
+      try {
+        const snap = await getDoc(doc(db, "config", "permissions"));
+        setRolePermissions(snap.exists() ? snap.data() : DEFAULT_PERMISSIONS);
+      } catch {
+        setRolePermissions(DEFAULT_PERMISSIONS);
+      }
+    }
+    if (user) loadPermissions();
+  }, [user]);
+
+  if (loading || !rolePermissions) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontSize: "1.3rem", color: "var(--egbe-green)" }}>
         Carregando...
@@ -59,11 +47,13 @@ export default function DashboardLayout({ children }) {
 
   if (!user) return null;
 
-  const visibleMenu = [
-    ...menuItems.common,
-    ...(isConselho ? menuItems.conselho : []),
-    ...(isAdmin ? menuItems.admin : []),
-  ];
+  const role = profile?.role || "cliente";
+  const allowedKeys = rolePermissions[role] || DEFAULT_PERMISSIONS[role] || [];
+  const dynamicItems = ALL_AREAS.filter((area) => allowedKeys.includes(area.key));
+  const visibleMenu = [...FIXED_AREAS, ...dynamicItems];
+
+  // Agrupa por group para mostrar separadores
+  let lastGroup = null;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -79,19 +69,18 @@ export default function DashboardLayout({ children }) {
         <nav style={{ flex: 1, padding: "0.5rem 0", overflowY: "auto" }}>
           {visibleMenu.map((item) => {
             const isActive = pathname === item.href;
-            const isAdminItem = item.href.includes("/admin/");
-            const isConselhoItem = item.href === "/dashboard/membros";
+            const group = item.group || null;
+            let showSeparator = false;
+            if (group && group !== lastGroup) {
+              showSeparator = true;
+              lastGroup = group;
+            }
 
             return (
-              <div key={item.href}>
-                {isConselhoItem && (
+              <div key={item.key || item.href}>
+                {showSeparator && (
                   <div style={{ padding: "0.75rem 1.5rem 0.4rem", fontSize: "0.65rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "0.3rem" }}>
-                    Conselho
-                  </div>
-                )}
-                {isAdminItem && item === menuItems.admin[0] && (
-                  <div style={{ padding: "0.75rem 1.5rem 0.4rem", fontSize: "0.65rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "0.3rem" }}>
-                    Administração
+                    {group}
                   </div>
                 )}
                 <Link href={item.href} style={{

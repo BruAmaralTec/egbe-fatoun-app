@@ -31,9 +31,10 @@ export function useAuth() {
  * Perfis disponíveis:
  * - sacerdote: Super Admin (Ìyánífá Fátọ́ún)
  * - tecnico: Super Admin técnico
- * - conselho: Admin
- * - filho: Acesso configurável por pessoa
- * - cliente: Acesso configurável por pessoa
+ * - conselho: Admin (gestão de membros, eventos, cursos, rituais)
+ * - midias: Gestão de comunicação, redes sociais, eventos e cursos
+ * - filho: Membro da casa (acesso à comunidade)
+ * - cliente: Acesso básico (eventos, cursos, perfil)
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);       // Dados do Firebase Auth

@@ -12,13 +12,7 @@ import { useRouter } from "next/navigation";
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 
-const ROLES = [
-  { value: "sacerdote", label: "Sacerdotisa", color: "#f59e0b" },
-  { value: "tecnico", label: "Técnico", color: "#3b82f6" },
-  { value: "conselho", label: "Conselho", color: "#6366f1" },
-  { value: "filho", label: "Filho(a) da Casa", color: "#22c55e" },
-  { value: "cliente", label: "Cliente", color: "#9ca3af" },
-];
+import { ROLES } from "@/lib/LPermissions";
 
 export default function FUsuariosAdmin() {
   const { profile, isAdmin } = useAuth();
