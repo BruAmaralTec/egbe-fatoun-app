@@ -179,6 +179,7 @@ h3 { font-size: clamp(1.3rem, 2.5vw, 1.8rem); }
 .badge-sacerdote { background: var(--egbe-yellow-light); color: #6b4e00; }
 .badge-tecnico   { background: #dbeafe; color: #1e40af; }
 .badge-conselho  { background: #e0e7ff; color: #3730a3; }
+.badge-midias    { background: #fce7f3; color: #9d174d; }
 .badge-filho     { background: #d1fae5; color: var(--egbe-green-dark); }
 .badge-cliente   { background: #f3f4f6; color: #4b5563; }
 
