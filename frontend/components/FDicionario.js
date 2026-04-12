@@ -31,6 +31,14 @@ export default function FDicionario() {
   const [sourceText, setSourceText] = useState("");
   const [translation, setTranslation] = useState("");
   const [translating, setTranslating] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState(null);
+
+  function copyPhrase(phrase, index) {
+    const yoruba = phrase.split(" — ")[0];
+    navigator.clipboard.writeText(yoruba);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 1500);
+  }
 
   async function handleTranslate() {
     if (!sourceText.trim()) return;
@@ -113,13 +121,36 @@ export default function FDicionario() {
 
       {/* Frases rápidas */}
       <div className="card" style={{ maxWidth: "800px" }}>
-        <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Frases rápidas</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "0.5rem" }}>
-          {QUICK_PHRASES.map(p => (
-            <button key={p} onClick={() => { setSourceText(p.split(" — ")[0]); setFromLang("yo"); setToLang("pt"); }} style={{
-              padding: "0.6rem 0.75rem", background: "#f0f7f3", border: "1px solid #d1fae5", borderRadius: "8px",
-              cursor: "pointer", textAlign: "left", fontSize: "0.82rem", color: "#1a1a1a", fontFamily: "inherit",
-            }}>{p}</button>
+        <h3 style={{ fontSize: "1.05rem", marginBottom: "0.25rem" }}>Frases rápidas</h3>
+        <p style={{ fontSize: "0.78rem", color: "#888", marginBottom: "0.75rem" }}>Clique no texto para usar no tradutor · clique no 📋 para copiar</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "0.5rem" }}>
+          {QUICK_PHRASES.map((p, i) => (
+            <div key={p} style={{
+              display: "flex", alignItems: "stretch", background: "#f0f7f3",
+              border: "1px solid #d1fae5", borderRadius: "8px", overflow: "hidden",
+            }}>
+              <button
+                onClick={() => { setSourceText(p.split(" — ")[0]); setFromLang("yo"); setToLang("pt"); }}
+                style={{
+                  flex: 1, padding: "0.6rem 0.75rem", background: "none", border: "none",
+                  cursor: "pointer", textAlign: "left", fontSize: "0.82rem", color: "#1a1a1a", fontFamily: "inherit",
+                }}
+              >
+                {p}
+              </button>
+              <button
+                onClick={() => copyPhrase(p, i)}
+                title="Copiar texto em Yorùbá"
+                style={{
+                  padding: "0 0.75rem", background: copiedIndex === i ? "var(--egbe-green)" : "white",
+                  border: "none", borderLeft: "1px solid #d1fae5", cursor: "pointer",
+                  fontSize: "0.9rem", color: copiedIndex === i ? "white" : "var(--egbe-green-dark)",
+                  fontWeight: 600, transition: "background 0.2s",
+                }}
+              >
+                {copiedIndex === i ? "✓" : "📋"}
+              </button>
+            </div>
           ))}
         </div>
       </div>
