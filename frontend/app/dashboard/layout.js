@@ -20,6 +20,10 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [rolePermissions, setRolePermissions] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Fecha drawer ao trocar de rota
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -57,8 +61,17 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
+      {/* OVERLAY MOBILE */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 39 }}
+          className="mobile-overlay"
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside style={{ width: "260px", background: "var(--egbe-black)", color: "white", display: "flex", flexDirection: "column", position: "fixed", top: 0, bottom: 0, left: 0, zIndex: 40 }}>
+      <aside className={`dashboard-sidebar ${mobileOpen ? "open" : ""}`} style={{ width: "260px", background: "var(--egbe-black)", color: "white", display: "flex", flexDirection: "column", position: "fixed", top: 0, bottom: 0, left: 0, zIndex: 40 }}>
         <div style={{ padding: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <Link href="/" style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", fontWeight: 700, color: "var(--egbe-yellow)", textDecoration: "none" }}>
             Ẹgbẹ́ Fátọ́ún
@@ -116,11 +129,21 @@ export default function DashboardLayout({ children }) {
       </aside>
 
       {/* CONTEÚDO */}
-      <div style={{ marginLeft: "260px", flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <header style={{ padding: "0.75rem 2rem", display: "flex", alignItems: "center", justifyContent: "flex-end", background: "white", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 30 }}>
-          <FNotificationBell />
+      <div className="dashboard-content" style={{ marginLeft: "260px", flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", minWidth: 0 }}>
+        <header style={{ padding: "0.75rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", background: "white", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 30 }}>
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="mobile-menu-btn"
+            aria-label="Abrir menu"
+            style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", padding: "0.3rem 0.6rem", display: "none" }}
+          >
+            ☰
+          </button>
+          <div style={{ marginLeft: "auto" }}>
+            <FNotificationBell />
+          </div>
         </header>
-        <main style={{ flex: 1, padding: "2rem", background: "#f8f9fa" }}>
+        <main style={{ flex: 1, padding: "1rem", background: "#f8f9fa" }}>
           {children}
         </main>
       </div>

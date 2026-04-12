@@ -196,3 +196,35 @@ h3 { font-size: clamp(1.3rem, 2.5vw, 1.8rem); }
 .status-connected    { background: #22c55e; }
 .status-disconnected { background: #ef4444; }
 .status-pending      { background: var(--egbe-yellow); }
+
+/* ----------------------------------------
+   DASHBOARD RESPONSIVO
+   ---------------------------------------- */
+
+.mobile-overlay { display: none; }
+
+@media (max-width: 900px) {
+  .dashboard-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  }
+  .dashboard-sidebar.open {
+    transform: translateX(0);
+  }
+  .dashboard-content {
+    margin-left: 0 !important;
+  }
+  .mobile-menu-btn {
+    display: inline-block !important;
+  }
+  .mobile-overlay {
+    display: block;
+  }
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 0.75rem !important;
+  }
+}
