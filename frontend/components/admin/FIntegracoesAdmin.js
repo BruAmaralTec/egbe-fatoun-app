@@ -23,6 +23,7 @@ const INTEGRATIONS = [
   { id: "googleTranslate", name: "Google Cloud Translation", description: "Dicionário PT ↔ ES ↔ Yorùbá ↔ EN", category: "Dicionário", docsUrl: "https://cloud.google.com/translate/docs", fields: [{ key: "apiKey", label: "API Key", type: "password" }, { key: "projectId", label: "Project ID", type: "text" }], color: "#4285F4" },
   { id: "serpapi", name: "SerpAPI", description: "Busca avançada e pesquisa", category: "Utilidades", docsUrl: "https://serpapi.com/dashboard", fields: [{ key: "apiKey", label: "API Key", type: "password" }], color: "#2D6CDF" },
   { id: "firebase", name: "Firebase", description: "Auth, Firestore, Storage", category: "Infraestrutura", docsUrl: "https://console.firebase.google.com", fields: [{ key: "projectId", label: "Project ID", type: "text" }, { key: "storageBucket", label: "Storage Bucket", type: "text" }, { key: "authDomain", label: "Auth Domain", type: "text" }], color: "#FFCA28" },
+  { id: "autentique", name: "Autentique", description: "Assinatura digital de certificados", category: "Cursos", docsUrl: "https://docs.autentique.com.br/api", fields: [{ key: "apiToken", label: "API Token", type: "password", placeholder: "Bearer token da conta" }, { key: "sandbox", label: "Ambiente", type: "select", options: ["sandbox", "production"] }], color: "#0EA5E9" },
 ];
 
 export default function FIntegracoesAdmin() {

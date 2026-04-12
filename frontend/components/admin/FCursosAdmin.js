@@ -16,11 +16,13 @@ import { db } from "@/lib/LFirebase";
 import { notifyAll } from "@/lib/LNotifications";
 
 const EMPTY_COURSE = {
-  title: "", description: "", instructor: "", startDate: "", endDate: "",
-  schedule: "", price: 0, maxStudents: 0, status: "draft", visibility: "public",
+  title: "", subtitle: "", description: "", sacerdotisa: "",
+  days: [{ id: "1", date: "", startTime: "", endTime: "" }],
+  price: 0, maxStudents: 0, status: "draft", visibility: "public",
   symplaEventId: "", streamYardUrl: "", youtubeVideoId: "", youtubePlaylistId: "",
   recordingAvailable: false, recordingPublic: false,
   certificateEnabled: true, certificateHours: 0, certificateTemplate: "default",
+  autentiqueEnabled: false, autentiqueFolderId: "", autentiqueTemplateId: "",
   modules: [], materials: [],
 };
 
@@ -72,7 +74,7 @@ export default function FCursosAdmin() {
         try {
           await notifyAll({
             title: `Inscrições abertas: ${form.title}`,
-            message: form.description?.slice(0, 200) || `${form.instructor ? "Com " + form.instructor + " · " : ""}Início: ${form.startDate || "em breve"}`,
+            message: form.description?.slice(0, 200) || `${form.sacerdotisa ? "Com " + form.sacerdotisa + " · " : ""}Início: ${form.days?.[0]?.date || "em breve"}`,
             category: "course",
             link: "/dashboard/cursos",
           });
@@ -122,16 +124,53 @@ export default function FCursosAdmin() {
           <div className="card" style={{ maxWidth: "700px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Título</label><input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex: Introdução ao Corpus de Ifá" /></div>
+              <div style={{ gridColumn: "1 / -1" }}><label className="label">Subtítulo</label><input className="input-field" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder="Ex: Fundamentos para iniciantes" /></div>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Descrição</label><textarea className="input-field" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={{ resize: "vertical" }} /></div>
-              <div><label className="label">Instrutor(a)</label><input className="input-field" value={form.instructor} onChange={(e) => setForm({ ...form, instructor: e.target.value })} /></div>
-              <div><label className="label">Horário / Agenda</label><input className="input-field" value={form.schedule} onChange={(e) => setForm({ ...form, schedule: e.target.value })} placeholder="Sábados, 10h-12h" /></div>
-              <div><label className="label">Data início</label><input className="input-field" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></div>
-              <div><label className="label">Data fim</label><input className="input-field" type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} /></div>
+              <div style={{ gridColumn: "1 / -1" }}><label className="label">Sacerdotisa(e)</label><input className="input-field" value={form.sacerdotisa} onChange={(e) => setForm({ ...form, sacerdotisa: e.target.value })} placeholder="Nome da Sacerdotisa ou Sacerdote" /></div>
               <div><label className="label">Valor (R$)</label><input className="input-field" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} /></div>
               <div><label className="label">Vagas (0 = ilimitado)</label><input className="input-field" type="number" min="0" value={form.maxStudents} onChange={(e) => setForm({ ...form, maxStudents: parseInt(e.target.value) || 0 })} /></div>
               <div><label className="label">Status</label><select className="input-field" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>{STATUS_OPTIONS.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}</select></div>
               <div><label className="label">Visibilidade</label><select className="input-field" value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value })}><option value="public">Público</option><option value="members">Membros</option><option value="private">Privado</option></select></div>
             </div>
+
+            {/* Dias do curso */}
+            <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid #e5e7eb" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: 600 }}>Agenda do Curso</h4>
+                <button
+                  onClick={() => setForm({ ...form, days: [...(form.days || []), { id: Date.now().toString(), date: "", startTime: "", endTime: "" }] })}
+                  className="btn btn-secondary"
+                  style={{ padding: "0.35rem 0.75rem", fontSize: "0.82rem" }}
+                >
+                  + Adicionar dia
+                </button>
+              </div>
+
+              {(form.days || []).map((day, i) => (
+                <div key={day.id} style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr 1fr auto auto", gap: "0.5rem", alignItems: "end", marginBottom: "0.5rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--egbe-green-dark)", paddingBottom: "0.5rem" }}>Dia {i + 1}</div>
+                  <div><label style={{ fontSize: "0.72rem", color: "#888" }}>Data</label><input className="input-field" type="date" value={day.date} onChange={(e) => { const d = [...form.days]; d[i] = { ...d[i], date: e.target.value }; setForm({ ...form, days: d }); }} /></div>
+                  <div><label style={{ fontSize: "0.72rem", color: "#888" }}>Hora início</label><input className="input-field" type="time" value={day.startTime} onChange={(e) => { const d = [...form.days]; d[i] = { ...d[i], startTime: e.target.value }; setForm({ ...form, days: d }); }} /></div>
+                  <div><label style={{ fontSize: "0.72rem", color: "#888" }}>Hora fim</label><input className="input-field" type="time" value={day.endTime} onChange={(e) => { const d = [...form.days]; d[i] = { ...d[i], endTime: e.target.value }; setForm({ ...form, days: d }); }} /></div>
+                  <button
+                    onClick={() => setForm({ ...form, days: [...form.days, { ...day, id: Date.now().toString(), date: "" }] })}
+                    title="Clonar este dia"
+                    style={{ padding: "0.5rem 0.75rem", background: "none", border: "1.5px solid var(--egbe-green)", borderRadius: "6px", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}
+                  >
+                    Clonar
+                  </button>
+                  <button
+                    onClick={() => form.days.length > 1 && setForm({ ...form, days: form.days.filter((d) => d.id !== day.id) })}
+                    disabled={form.days.length <= 1}
+                    title="Remover este dia"
+                    style={{ padding: "0.5rem 0.6rem", background: "none", border: "1.5px solid #fecaca", borderRadius: "6px", color: "var(--egbe-red)", cursor: form.days.length > 1 ? "pointer" : "not-allowed", fontSize: "0.9rem", opacity: form.days.length > 1 ? 1 : 0.4 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
             <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "1rem", marginTop: "1rem", borderTop: "1px solid #e5e7eb" }}>
               <button onClick={handleSave} className="btn btn-primary" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</button>
             </div>
@@ -217,10 +256,39 @@ export default function FCursosAdmin() {
               <label htmlFor="certEnabled" style={{ fontWeight: 600 }}>Gerar certificado para alunos concluintes</label>
             </div>
             {form.certificateEnabled && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div><label className="label">Carga horária</label><input className="input-field" type="number" min="0" value={form.certificateHours} onChange={(e) => setForm({ ...form, certificateHours: parseInt(e.target.value) || 0 })} /></div>
-                <div><label className="label">Template</label><select className="input-field" value={form.certificateTemplate} onChange={(e) => setForm({ ...form, certificateTemplate: e.target.value })}><option value="default">Padrão Ẹgbẹ́</option><option value="formal">Formal</option><option value="minimal">Minimalista</option></select></div>
-              </div>
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+                  <div><label className="label">Carga horária</label><input className="input-field" type="number" min="0" value={form.certificateHours} onChange={(e) => setForm({ ...form, certificateHours: parseInt(e.target.value) || 0 })} /></div>
+                  <div><label className="label">Template</label><select className="input-field" value={form.certificateTemplate} onChange={(e) => setForm({ ...form, certificateTemplate: e.target.value })}><option value="default">Padrão Ẹgbẹ́</option><option value="formal">Formal</option><option value="minimal">Minimalista</option></select></div>
+                </div>
+
+                {/* Integração Autentique */}
+                <div style={{ padding: "1rem", background: "#f0fdf4", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    <input type="checkbox" id="autentiqueEnabled" checked={form.autentiqueEnabled} onChange={(e) => setForm({ ...form, autentiqueEnabled: e.target.checked })} />
+                    <label htmlFor="autentiqueEnabled" style={{ fontWeight: 600, color: "#166534" }}>
+                      🔐 Assinar certificado via Autentique
+                    </label>
+                  </div>
+                  <p style={{ fontSize: "0.8rem", color: "#166534", marginBottom: "0.75rem" }}>
+                    Envia o certificado automaticamente pro{" "}
+                    <a href="https://docs.autentique.com.br/api" target="_blank" rel="noreferrer" style={{ color: "#166534", textDecoration: "underline" }}>Autentique</a>
+                    {" "}para assinatura digital. A chave API é configurada na tela de Integrações.
+                  </p>
+                  {form.autentiqueEnabled && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                      <div>
+                        <label className="label">ID da pasta (Autentique)</label>
+                        <input className="input-field" value={form.autentiqueFolderId} onChange={(e) => setForm({ ...form, autentiqueFolderId: e.target.value })} placeholder="Opcional — pasta onde salvar" />
+                      </div>
+                      <div>
+                        <label className="label">ID do template</label>
+                        <input className="input-field" value={form.autentiqueTemplateId} onChange={(e) => setForm({ ...form, autentiqueTemplateId: e.target.value })} placeholder="ID do template Autentique" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
             <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "1rem", marginTop: "1rem", borderTop: "1px solid #e5e7eb" }}>
               <button onClick={handleSave} className="btn btn-primary" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</button>
@@ -254,7 +322,7 @@ export default function FCursosAdmin() {
                 </div>
                 <h3 style={{ fontSize: "1.1rem", marginBottom: "0.2rem" }}>{course.title}</h3>
                 <p style={{ color: "#888", fontSize: "0.82rem", marginBottom: "0.5rem" }}>
-                  {course.instructor && <>{course.instructor} — </>}{course.schedule || "Sem horário"}
+                  {course.sacerdotisa && <>{course.sacerdotisa} — </>}{course.days?.length ? `${course.days.length} dia(s)` : "Sem agenda"}
                   {course.price > 0 && <> — <strong style={{ color: "var(--egbe-green)" }}>R$ {course.price.toFixed(2)}</strong></>}
                 </p>
                 <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
