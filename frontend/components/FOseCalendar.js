@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -31,34 +31,34 @@ function getOseType(date) {
   return OSE_TYPES[idx];
 }
 
+const ALL_ORIXAS_META = OSE_TYPES.flatMap((t) => t.orixas.map((ox) => ({ name: ox, color: t.color, bg: t.bg })));
+const ORIXA_META = Object.fromEntries(ALL_ORIXAS_META.map((o) => [o.name, o]));
+
 export default function FOseCalendar() {
   const { isAdmin } = useAuth();
   const [curYear, setCurYear] = useState(new Date().getFullYear());
   const [curMonth, setCurMonth] = useState(new Date().getMonth());
   const [selDay, setSelDay] = useState(null);
   const [filters, setFilters] = useState([]);
-  const [dayData, setDayData] = useState({});
-  const [saving, setSaving] = useState(false);
+  const [dayOverrides, setDayOverrides] = useState({});
+  const [defaults, setDefaults] = useState({});
 
   useEffect(() => {
     async function load() {
-      const snap = await getDoc(doc(db, "settings", "oseData"));
-      if (snap.exists()) setDayData(snap.data());
+      const [daySnap, defSnap] = await Promise.all([
+        getDoc(doc(db, "settings", "oseData")),
+        getDoc(doc(db, "settings", "oseDefaults")),
+      ]);
+      if (daySnap.exists()) setDayOverrides(daySnap.data());
+      if (defSnap.exists()) setDefaults(defSnap.data());
     }
     load();
   }, []);
 
-  async function saveOseData(key, orixaIdx, field, value) {
-    const updated = { ...dayData };
-    if (!updated[key]) updated[key] = {};
-    if (!updated[key][orixaIdx]) updated[key][orixaIdx] = { link: "", audio: "", text: "" };
-    updated[key][orixaIdx][field] = value;
-    setDayData(updated);
-    if (isAdmin) {
-      setSaving(true);
-      await setDoc(doc(db, "settings", "oseData"), updated, { merge: true });
-      setSaving(false);
-    }
+  function getOrixasForDay(y, m, d) {
+    const key = `${y}-${m}-${d}`;
+    if (dayOverrides[key]?.orixas) return dayOverrides[key].orixas;
+    return getOseType(new Date(y, m, d)).orixas;
   }
 
   function changeMonth(dir) {
@@ -79,8 +79,8 @@ export default function FOseCalendar() {
   const today = new Date();
 
   const selectedDate = selDay ? new Date(curYear, curMonth, selDay) : null;
-  const selectedOse = selectedDate ? getOseType(selectedDate) : null;
-  const dayKey = selectedDate ? `${curYear}-${curMonth}-${selDay}` : null;
+  const selectedOrixas = selDay ? getOrixasForDay(curYear, curMonth, selDay) : [];
+  const selectedMainColor = selectedOrixas[0] ? ORIXA_META[selectedOrixas[0]]?.color : null;
 
   return (
     <div>
@@ -147,22 +147,23 @@ export default function FOseCalendar() {
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const d = i + 1;
             const date = new Date(curYear, curMonth, d);
-            const ose = getOseType(date);
+            const orixas = getOrixasForDay(curYear, curMonth, d);
+            const mainColor = orixas[0] ? ORIXA_META[orixas[0]]?.color : "#888";
             const isToday = date.toDateString() === today.toDateString();
             const isSel = selDay === d;
-            const isDimmed = filters.length > 0 && !ose.orixas.some((ox) => filters.includes(ox));
+            const isDimmed = filters.length > 0 && !orixas.some((ox) => filters.includes(ox));
             return (
               <div key={d} onClick={() => setSelDay(d)} style={{
                 padding: "0.5rem 0.25rem", borderRadius: "8px", cursor: "pointer", textAlign: "center",
-                background: isSel ? ose.color : isToday ? "#f0f0f0" : "transparent",
+                background: isSel ? mainColor : isToday ? "#f0f0f0" : "transparent",
                 opacity: isDimmed ? 0.25 : 1,
                 border: isToday && !isSel ? "2px solid var(--egbe-green)" : "2px solid transparent",
                 transition: "all 0.15s",
               }}>
                 <div style={{ fontSize: "0.85rem", fontWeight: 600, color: isSel ? "white" : "#333" }}>{d}</div>
-                <div style={{ display: "flex", gap: "2px", justifyContent: "center", marginTop: "2px" }}>
-                  {ose.orixas.map(ox => (
-                    <div key={ox} style={{ width: "6px", height: "6px", borderRadius: "50%", background: isSel ? "rgba(255,255,255,0.7)" : ose.color }} />
+                <div style={{ display: "flex", gap: "2px", justifyContent: "center", marginTop: "2px", flexWrap: "wrap", maxWidth: "60px", marginLeft: "auto", marginRight: "auto" }}>
+                  {orixas.map((ox) => (
+                    <div key={ox} style={{ width: "6px", height: "6px", borderRadius: "50%", background: isSel ? "rgba(255,255,255,0.7)" : (ORIXA_META[ox]?.color || "#888") }} />
                   ))}
                 </div>
               </div>
@@ -172,25 +173,25 @@ export default function FOseCalendar() {
       </div>
 
       {/* Detalhe do dia */}
-      {selectedDate && selectedOse && (
-        <div className="card" style={{ borderLeft: `4px solid ${selectedOse.color}` }}>
+      {selectedDate && selectedOrixas.length > 0 && (
+        <div className="card" style={{ borderLeft: `4px solid ${selectedMainColor}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <div>
               <h3 style={{ fontSize: "1.1rem", margin: 0 }}>{selDay} de {MONTHS[curMonth]} de {curYear}</h3>
-              <p style={{ color: "#888", fontSize: "0.85rem" }}>Osè de {selectedOse.orixas.join(" e ")}</p>
+              <p style={{ color: "#888", fontSize: "0.85rem" }}>Ọ̀sẹ̀ de {selectedOrixas.join(" e ")}</p>
             </div>
-            {saving && <span style={{ fontSize: "0.8rem", color: "var(--egbe-green)" }}>Salvando...</span>}
           </div>
 
-          {selectedOse.orixas.map((ox, idx) => {
-            const data = dayData[dayKey]?.[idx] || { link: "", audio: "", text: "" };
+          {selectedOrixas.map((ox) => {
+            const meta = ORIXA_META[ox] || { color: "#888", bg: "#f3f4f6" };
+            const data = defaults[ox] || {};
             const hasContent = data.link || data.audio || data.text;
             return (
-              <div key={ox} style={{ padding: "1rem", background: selectedOse.bg, borderRadius: "8px", marginBottom: "0.75rem" }}>
-                <h4 style={{ color: selectedOse.color, fontSize: "1rem", marginBottom: "0.75rem" }}>{ox}</h4>
+              <div key={ox} style={{ padding: "1rem", background: meta.bg, borderRadius: "8px", marginBottom: "0.75rem" }}>
+                <h4 style={{ color: meta.color, fontSize: "1rem", marginBottom: "0.75rem" }}>{ox}</h4>
                 {!hasContent ? (
                   <p style={{ fontSize: "0.85rem", color: "#888", fontStyle: "italic" }}>
-                    Nenhum conteúdo cadastrado para este dia.
+                    Nenhum conteúdo cadastrado para este Òrìṣà.
                   </p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -200,7 +201,7 @@ export default function FOseCalendar() {
                         <audio controls src={data.audio} style={{ width: "100%", maxWidth: "400px" }}>Seu navegador não suporta áudio.</audio>
                       </div>
                     )}
-                    {data.link && <a href={data.link} target="_blank" rel="noopener" style={{ display: "inline-block", fontSize: "0.85rem", color: selectedOse.color, fontWeight: 600 }}>🔗 Abrir link ↗</a>}
+                    {data.link && <a href={data.link} target="_blank" rel="noopener" style={{ display: "inline-block", fontSize: "0.85rem", color: meta.color, fontWeight: 600 }}>🔗 Abrir link ↗</a>}
                   </div>
                 )}
               </div>
@@ -209,7 +210,7 @@ export default function FOseCalendar() {
 
           {isAdmin && (
             <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "#f0f7f3", borderRadius: "8px", border: "1px solid #d1fae5", fontSize: "0.82rem", color: "var(--egbe-green-dark)" }}>
-              ⚙️ Para editar os conteúdos (orações, áudios, links), acesse a <a href="/dashboard/admin/ose" style={{ color: "var(--egbe-green-dark)", fontWeight: 600, textDecoration: "underline" }}>Gestão do Calendário de Ọ̀sẹ̀</a>.
+              ⚙️ Para editar orações/áudios por Òrìṣà ou ajustar os Òrìṣà de cada dia, acesse a <a href="/dashboard/admin/ose" style={{ color: "var(--egbe-green-dark)", fontWeight: 600, textDecoration: "underline" }}>Gestão do Calendário de Ọ̀sẹ̀</a>.
             </div>
           )}
         </div>

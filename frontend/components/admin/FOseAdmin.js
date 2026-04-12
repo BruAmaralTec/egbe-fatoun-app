@@ -2,7 +2,9 @@
 // components/admin/FOseAdmin.js
 // [F = Frontend Component]
 // Gestão do Calendário de Ọ̀sẹ̀ — admin
-// Edita conteúdos padrão por Orixá e override por dia
+// - Conteúdo padrão por Òrìṣà (texto, áudio, link)
+// - Configuração do período: seleção de Òrìṣà(s) por dia,
+//   com resets (dia/mês/ano/período)
 // ========================================
 
 "use client";
@@ -23,21 +25,33 @@ const OSE_TYPES = [
 ];
 
 const ALL_ORIXAS = OSE_TYPES.flatMap((t) => t.orixas.map((ox) => ({ name: ox, color: t.color, bg: t.bg })));
+const ORIXA_COLOR = Object.fromEntries(ALL_ORIXAS.map((o) => [o.name, o.color]));
+
+const EPOCH = new Date(2026, 0, 1);
+function getDefaultOse(date) {
+  const diff = Math.floor((date - EPOCH) / 86400000);
+  return OSE_TYPES[((diff % 4) + 4) % 4];
+}
+function dayKey(y, m, d) { return `${y}-${m}-${d}`; }
 
 export default function FOseAdmin() {
   const { profile, isConselho } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState("defaults");
   const [defaults, setDefaults] = useState({});
-  const [dayData, setDayData] = useState({});
+  const [dayOverrides, setDayOverrides] = useState({}); // { "2026-0-1": { orixas: ["..."] } }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Para override de dia
+  // Para configuração do período
   const [curYear, setCurYear] = useState(new Date().getFullYear());
   const [curMonth, setCurMonth] = useState(new Date().getMonth());
   const [selDay, setSelDay] = useState(null);
+
+  // Reset por período
+  const [resetStart, setResetStart] = useState("");
+  const [resetEnd, setResetEnd] = useState("");
 
   useEffect(() => { if (profile && !isConselho) router.push("/dashboard"); }, [profile, isConselho, router]);
 
@@ -49,7 +63,7 @@ export default function FOseAdmin() {
           getDoc(doc(db, "settings", "oseData")),
         ]);
         if (defSnap.exists()) setDefaults(defSnap.data());
-        if (daySnap.exists()) setDayData(daySnap.data());
+        if (daySnap.exists()) setDayOverrides(daySnap.data());
       } catch (err) {
         console.error("Erro ao carregar:", err);
       } finally {
@@ -69,12 +83,7 @@ export default function FOseAdmin() {
     finally { setSaving(false); }
   }
 
-  async function saveDayData(key, orixaIdx, field, value) {
-    const updated = { ...dayData };
-    if (!updated[key]) updated[key] = {};
-    if (!updated[key][orixaIdx]) updated[key][orixaIdx] = { link: "", audio: "", text: "" };
-    updated[key][orixaIdx][field] = value;
-    setDayData(updated);
+  async function persistOverrides(updated) {
     setSaving(true);
     try {
       await setDoc(doc(db, "settings", "oseData"), updated);
@@ -86,23 +95,73 @@ export default function FOseAdmin() {
     setDefaults((prev) => ({ ...prev, [orixa]: { ...(prev[orixa] || {}), [field]: value } }));
   }
 
+  function getOrixasForDay(y, m, d) {
+    const key = dayKey(y, m, d);
+    if (dayOverrides[key]?.orixas) return dayOverrides[key].orixas;
+    return getDefaultOse(new Date(y, m, d)).orixas;
+  }
+
+  async function setOrixasForDay(y, m, d, orixas) {
+    const key = dayKey(y, m, d);
+    const updated = { ...dayOverrides, [key]: { orixas } };
+    setDayOverrides(updated);
+    await persistOverrides(updated);
+  }
+
+  async function resetKeys(keys) {
+    if (keys.length === 0) return;
+    if (!confirm(`Resetar ${keys.length} dia(s)? Isso volta ao ciclo padrão de 4 dias.`)) return;
+    const updated = { ...dayOverrides };
+    keys.forEach((k) => { delete updated[k]; });
+    setDayOverrides(updated);
+    await persistOverrides(updated);
+  }
+
+  async function resetDay() {
+    if (!selDay) return;
+    await resetKeys([dayKey(curYear, curMonth, selDay)]);
+  }
+
+  async function resetMonth() {
+    const keys = Object.keys(dayOverrides).filter((k) => {
+      const [y, m] = k.split("-").map(Number);
+      return y === curYear && m === curMonth;
+    });
+    await resetKeys(keys);
+  }
+
+  async function resetYear() {
+    const keys = Object.keys(dayOverrides).filter((k) => {
+      const [y] = k.split("-").map(Number);
+      return y === curYear;
+    });
+    await resetKeys(keys);
+  }
+
+  async function resetPeriod() {
+    if (!resetStart || !resetEnd) { alert("Selecione as duas datas do período."); return; }
+    const start = new Date(resetStart).getTime();
+    const end = new Date(resetEnd).getTime();
+    if (start > end) { alert("Data inicial deve ser anterior à final."); return; }
+    const keys = Object.keys(dayOverrides).filter((k) => {
+      const [y, m, d] = k.split("-").map(Number);
+      const t = new Date(y, m, d).getTime();
+      return t >= start && t <= end;
+    });
+    await resetKeys(keys);
+  }
+
   if (!isConselho) return null;
   if (loading) return <p style={{ color: "#888" }}>Carregando...</p>;
 
-  // Cálculo do calendário pra aba de override
+  // Calendário
   const firstDay = new Date(curYear, curMonth, 1);
   let startDow = firstDay.getDay();
   startDow = startDow === 0 ? 6 : startDow - 1;
   const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-  const EPOCH = new Date(2026, 0, 1);
-  const getOseType = (date) => {
-    const diff = Math.floor((date - EPOCH) / 86400000);
-    return OSE_TYPES[((diff % 4) + 4) % 4];
-  };
 
-  const selectedDate = selDay ? new Date(curYear, curMonth, selDay) : null;
-  const selectedOse = selectedDate ? getOseType(selectedDate) : null;
-  const dayKey = selectedDate ? `${curYear}-${curMonth}-${selDay}` : null;
+  const selectedOrixas = selDay ? getOrixasForDay(curYear, curMonth, selDay) : [];
+  const selectedIsOverride = selDay && !!dayOverrides[dayKey(curYear, curMonth, selDay)];
 
   function changeMonth(dir) {
     let m = curMonth + dir, y = curYear;
@@ -115,27 +174,27 @@ export default function FOseAdmin() {
     <div>
       <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Gestão do Calendário de Ọ̀sẹ̀</h1>
       <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-        Configure orações, áudios e links padrão por Orixá, ou sobrescreva em dias específicos.
+        Configure os conteúdos por Òrìṣà e defina quais Òrìṣà(s) regem cada dia.
       </p>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <button onClick={() => setTab("defaults")} className={`btn ${tab === "defaults" ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.85rem" }}>
-          Conteúdo Padrão por Orixá
+          Conteúdo por Òrìṣà
         </button>
-        <button onClick={() => setTab("override")} className={`btn ${tab === "override" ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.85rem" }}>
-          Override por Dia
+        <button onClick={() => setTab("period")} className={`btn ${tab === "period" ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.85rem" }}>
+          Configuração do Período
         </button>
       </div>
 
-      {/* TAB: Conteúdo padrão por Orixá */}
+      {/* TAB: Conteúdo por Òrìṣà */}
       {tab === "defaults" && (
         <div>
           <p style={{ fontSize: "0.82rem", color: "#888", marginBottom: "1rem" }}>
-            Esses conteúdos aparecem como padrão em todos os dias do respectivo Orixá, quando não há override específico.
+            Os conteúdos aqui aparecem em todos os dias regidos pelo respectivo Òrìṣà.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1rem" }}>
-            {ALL_ORIXAS.map(({ name, color, bg }) => {
+            {ALL_ORIXAS.map(({ name, color }) => {
               const data = defaults[name] || { link: "", audio: "", text: "" };
               return (
                 <div key={name} className="card" style={{ borderTop: `4px solid ${color}` }}>
@@ -166,13 +225,30 @@ export default function FOseAdmin() {
         </div>
       )}
 
-      {/* TAB: Override por dia */}
-      {tab === "override" && (
+      {/* TAB: Configuração do Período */}
+      {tab === "period" && (
         <div>
           <p style={{ fontSize: "0.82rem", color: "#888", marginBottom: "1rem" }}>
-            Clique em um dia para editar o conteúdo específico, sobrescrevendo o padrão do Orixá naquele dia.
+            Clique num dia e marque quais Òrìṣà(s) regem aquela data. Sem customização, o ciclo padrão de 4 dias é aplicado.
           </p>
 
+          {/* Resets */}
+          <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+              <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#666", marginRight: "0.25rem" }}>Resetar:</span>
+              <button onClick={resetDay} disabled={!selDay} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem", opacity: selDay ? 1 : 0.5 }}>Dia selecionado</button>
+              <button onClick={resetMonth} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>{MONTHS[curMonth]} inteiro</button>
+              <button onClick={resetYear} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Ano {curYear}</button>
+              <span style={{ color: "#ccc", margin: "0 0.25rem" }}>|</span>
+              <input type="date" value={resetStart} onChange={(e) => setResetStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
+              <span style={{ fontSize: "0.8rem", color: "#888" }}>até</span>
+              <input type="date" value={resetEnd} onChange={(e) => setResetEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
+              <button onClick={resetPeriod} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Período</button>
+            </div>
+            <p style={{ fontSize: "0.72rem", color: "#888", marginTop: "0.5rem" }}>Reset apaga customizações e volta o(s) dia(s) ao ciclo padrão de 4 dias.</p>
+          </div>
+
+          {/* Navegação do calendário */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <button onClick={() => changeMonth(-1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem" }}>←</button>
             <h3 style={{ fontSize: "1.2rem", margin: 0 }}>{MONTHS[curMonth]} {curYear}</h3>
@@ -189,59 +265,83 @@ export default function FOseAdmin() {
               {Array.from({ length: startDow }).map((_, i) => <div key={`e${i}`} />)}
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const d = i + 1;
-                const date = new Date(curYear, curMonth, d);
-                const ose = getOseType(date);
-                const key = `${curYear}-${curMonth}-${d}`;
-                const hasOverride = dayData[key] && Object.values(dayData[key]).some((v) => v.text || v.audio || v.link);
+                const key = dayKey(curYear, curMonth, d);
+                const orixas = getOrixasForDay(curYear, curMonth, d);
+                const isCustom = !!dayOverrides[key];
                 const isSel = selDay === d;
+                const mainColor = ORIXA_COLOR[orixas[0]] || "#888";
                 return (
                   <div key={d} onClick={() => setSelDay(d)} style={{
                     padding: "0.5rem 0.25rem", borderRadius: "8px", cursor: "pointer", textAlign: "center",
-                    background: isSel ? ose.color : "transparent",
-                    border: hasOverride && !isSel ? `2px solid ${ose.color}` : "2px solid transparent",
+                    background: isSel ? mainColor : "transparent",
+                    border: isCustom && !isSel ? `2px dashed ${mainColor}` : "2px solid transparent",
                     transition: "all 0.15s",
                   }}>
                     <div style={{ fontSize: "0.85rem", fontWeight: 600, color: isSel ? "white" : "#333" }}>{d}</div>
-                    <div style={{ display: "flex", gap: "2px", justifyContent: "center", marginTop: "2px" }}>
-                      {ose.orixas.map((ox) => (
-                        <div key={ox} style={{ width: "6px", height: "6px", borderRadius: "50%", background: isSel ? "rgba(255,255,255,0.7)" : ose.color }} />
+                    <div style={{ display: "flex", gap: "2px", justifyContent: "center", marginTop: "2px", flexWrap: "wrap", maxWidth: "60px", marginLeft: "auto", marginRight: "auto" }}>
+                      {orixas.map((ox) => (
+                        <div key={ox} style={{ width: "6px", height: "6px", borderRadius: "50%", background: isSel ? "rgba(255,255,255,0.85)" : (ORIXA_COLOR[ox] || "#888") }} />
                       ))}
                     </div>
                   </div>
                 );
               })}
             </div>
+            <p style={{ fontSize: "0.72rem", color: "#888", marginTop: "0.75rem" }}>Dias com <span style={{ border: "1px dashed #888", padding: "0 0.3rem", borderRadius: "3px" }}>borda tracejada</span> têm customização.</p>
           </div>
 
-          {selectedDate && selectedOse && (
-            <div className="card" style={{ borderLeft: `4px solid ${selectedOse.color}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          {/* Editor do dia selecionado */}
+          {selDay && (
+            <div className="card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
                 <h3 style={{ fontSize: "1.1rem", margin: 0 }}>{selDay} de {MONTHS[curMonth]} de {curYear}</h3>
-                {saving && <span style={{ fontSize: "0.8rem", color: "var(--egbe-green)" }}>Salvando...</span>}
+                <div style={{ fontSize: "0.8rem", color: "#888" }}>
+                  {selectedIsOverride ? "Customizado" : "Ciclo padrão"} · {saving && <span style={{ color: "var(--egbe-green)" }}>Salvando...</span>}
+                </div>
               </div>
 
-              {selectedOse.orixas.map((ox, idx) => {
-                const data = dayData[dayKey]?.[idx] || { link: "", audio: "", text: "" };
-                return (
-                  <div key={ox} style={{ padding: "1rem", background: selectedOse.bg, borderRadius: "8px", marginBottom: "0.75rem" }}>
-                    <h4 style={{ color: selectedOse.color, fontSize: "1rem", marginBottom: "0.75rem" }}>{ox}</h4>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                      <div>
-                        <label className="label">Texto da oração (override)</label>
-                        <textarea className="input-field" rows={3} value={data.text || ""} onChange={(e) => saveDayData(dayKey, idx, "text", e.target.value)} style={{ resize: "vertical" }} />
-                      </div>
-                      <div>
-                        <label className="label">Áudio (URL)</label>
-                        <input className="input-field" type="url" value={data.audio || ""} onChange={(e) => saveDayData(dayKey, idx, "audio", e.target.value)} />
-                      </div>
-                      <div>
-                        <label className="label">Link</label>
-                        <input className="input-field" type="url" value={data.link || ""} onChange={(e) => saveDayData(dayKey, idx, "link", e.target.value)} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666", marginBottom: "0.5rem", display: "block" }}>
+                Selecione os Òrìṣà que regem este dia
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "0.5rem" }}>
+                {ALL_ORIXAS.map(({ name, color }) => {
+                  const active = selectedOrixas.includes(name);
+                  return (
+                    <label key={name} style={{
+                      display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem",
+                      background: active ? color + "15" : "white",
+                      border: `1.5px solid ${active ? color : "#e5e7eb"}`,
+                      borderRadius: "8px", cursor: "pointer", userSelect: "none",
+                    }}>
+                      <span style={{
+                        width: "18px", height: "18px", borderRadius: "50%",
+                        border: `2px solid ${color}`, background: active ? color : "white",
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                      }}>
+                        {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => {
+                          const next = active ? selectedOrixas.filter((o) => o !== name) : [...selectedOrixas, name];
+                          setOrixasForDay(curYear, curMonth, selDay, next);
+                        }}
+                        style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                      />
+                      <span style={{ fontSize: "0.85rem", color: active ? color : "#444", fontWeight: active ? 600 : 500 }}>
+                        {name}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {selectedIsOverride && (
+                <button onClick={resetDay} className="btn btn-secondary" style={{ marginTop: "1rem", fontSize: "0.82rem", padding: "0.4rem 0.9rem" }}>
+                  Voltar ao ciclo padrão deste dia
+                </button>
+              )}
             </div>
           )}
         </div>
