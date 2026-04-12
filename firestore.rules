@@ -59,5 +59,11 @@ service cloud.firestore {
       allow write: if isAuth() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tecnico";
     }
+
+    // Settings (integrações, configurações sensíveis): só tecnico lê/escreve
+    match /settings/{docId} {
+      allow read, write: if isAuth() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tecnico";
+    }
   }
 }
