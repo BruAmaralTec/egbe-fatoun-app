@@ -136,7 +136,11 @@ export default function FUsuariosAdmin() {
 
       {/* Modal de edição */}
       {editing && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }} onClick={(e) => { if (e.target === e.currentTarget) setEditing(null); }}>
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+          onMouseDown={(e) => { e.currentTarget.dataset.mdTarget = e.target === e.currentTarget ? "backdrop" : "content"; }}
+          onMouseUp={(e) => { if (e.currentTarget.dataset.mdTarget === "backdrop" && e.target === e.currentTarget) setEditing(null); }}
+        >
           <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", padding: "2rem" }}>
             <h2 style={{ fontSize: "1.3rem", marginBottom: "1.5rem" }}>Editar Usuário</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>

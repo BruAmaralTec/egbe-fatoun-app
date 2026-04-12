@@ -36,13 +36,25 @@ export default function FNotificationBell() {
     load();
   }, [user]);
 
-  // Close on click outside
+  // Close on click outside — só fecha se o clique começou E terminou fora
+  // (permite seleção de texto que atravessa a borda do dropdown sem fechar)
   useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setShowDropdown(false);
+    let startedOutside = false;
+    function handleMouseDown(e) {
+      startedOutside = !!(ref.current && !ref.current.contains(e.target));
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    function handleMouseUp(e) {
+      if (startedOutside && ref.current && !ref.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+      startedOutside = false;
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
   }, []);
 
   const unread = notifications.length;
