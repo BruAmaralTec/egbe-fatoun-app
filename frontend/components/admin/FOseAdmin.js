@@ -254,7 +254,7 @@ export default function FOseAdmin() {
         Configure conteúdos por Òrìṣà, monte ciclos de Ọ̀sẹ̀ e gere o calendário do período.
       </p>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         {[
           { id: "cycles", label: "Ciclos de Ọ̀sẹ̀" },
           { id: "orixas", label: "Òrìṣà" },
@@ -263,15 +263,6 @@ export default function FOseAdmin() {
             {t.label}
           </button>
         ))}
-        <a
-          href="/dashboard/ose"
-          target="_blank"
-          rel="noreferrer"
-          className="btn btn-secondary"
-          style={{ fontSize: "0.85rem", textDecoration: "none", marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
-        >
-          📅 Visualizar calendário ↗
-        </a>
       </div>
 
       {/* TAB: Òrìṣà — CRUD unificado (metadados + conteúdo) */}
@@ -342,6 +333,15 @@ export default function FOseAdmin() {
               <button onClick={generateCalendar} disabled={generating} className="btn btn-primary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>
                 {generating ? "Gerando..." : "Gerar calendário"}
               </button>
+              <a
+                href="/dashboard/ose"
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary"
+                style={{ fontSize: "0.82rem", padding: "0.4rem 1rem", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+              >
+                📅 Visualizar ↗
+              </a>
             </div>
             <p style={{ fontSize: "0.72rem", color: "#666", marginTop: "0.5rem" }}>
               Aplica os ciclos abaixo ao período escolhido. Sobrescreve customizações existentes.
