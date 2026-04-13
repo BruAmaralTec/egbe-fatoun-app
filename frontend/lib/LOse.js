@@ -5,7 +5,8 @@
 // - Ciclos padrão (JÀKÚTÁ, ÒÒSÀ, ÀWÒ, ÒGÚN)
 // ========================================
 
-export const ALL_ORIXAS = [
+// Lista default — pode ser sobrescrita pelos admins via settings/oseOrixas
+export const DEFAULT_ORIXAS = [
   // JÀKÚTÁ
   { name: "Ọyá", color: "#8b1e1e", bg: "#fde8e8" },
   { name: "Ṣàngó", color: "#B22222", bg: "#fde8e8" },
@@ -30,8 +31,15 @@ export const ALL_ORIXAS = [
   { name: "Yemọjá", color: "#0369a1", bg: "#dbeafe" },
 ];
 
-export const ORIXA_COLOR = Object.fromEntries(ALL_ORIXAS.map((o) => [o.name, o.color]));
-export const ORIXA_BG = Object.fromEntries(ALL_ORIXAS.map((o) => [o.name, o.bg]));
+export const DEFAULT_ORIXA_COLOR = Object.fromEntries(DEFAULT_ORIXAS.map((o) => [o.name, o.color]));
+export const DEFAULT_ORIXA_BG = Object.fromEntries(DEFAULT_ORIXAS.map((o) => [o.name, o.bg]));
+
+export function buildOrixaMaps(list) {
+  return {
+    colors: Object.fromEntries(list.map((o) => [o.name, o.color])),
+    bgs: Object.fromEntries(list.map((o) => [o.name, o.bg])),
+  };
+}
 
 // Ciclos padrão — 4 dias, começando em 2026-01-01
 export const DEFAULT_CYCLES = {

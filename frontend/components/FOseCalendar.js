@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
-import { ALL_ORIXAS, ORIXA_COLOR, ORIXA_BG, DEFAULT_CYCLES } from "@/lib/LOse";
+import { DEFAULT_ORIXAS, buildOrixaMaps, DEFAULT_CYCLES } from "@/lib/LOse";
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
@@ -23,20 +23,25 @@ export default function FOseCalendar() {
   const [dayOverrides, setDayOverrides] = useState({});
   const [defaults, setDefaults] = useState({});
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
+  const [orixas, setOrixas] = useState(DEFAULT_ORIXAS);
 
   useEffect(() => {
     async function load() {
-      const [daySnap, defSnap, cycSnap] = await Promise.all([
+      const [daySnap, defSnap, cycSnap, oxSnap] = await Promise.all([
         getDoc(doc(db, "settings", "oseData")),
         getDoc(doc(db, "settings", "oseDefaults")),
         getDoc(doc(db, "settings", "oseCycles")),
+        getDoc(doc(db, "settings", "oseOrixas")),
       ]);
       if (daySnap.exists()) setDayOverrides(daySnap.data());
       if (defSnap.exists()) setDefaults(defSnap.data());
       if (cycSnap.exists()) setCycles(cycSnap.data());
+      if (oxSnap.exists() && oxSnap.data().list) setOrixas(oxSnap.data().list);
     }
     load();
   }, []);
+
+  const { colors: ORIXA_COLOR, bgs: ORIXA_BG } = buildOrixaMaps(orixas);
 
   function getOrixasForDay(y, m, d) {
     const key = `${y}-${m}-${d}`;
@@ -95,7 +100,7 @@ export default function FOseCalendar() {
           )}
         </div>
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          {ALL_ORIXAS.map(({ name, color }) => {
+          {orixas.map(({ name, color }) => {
             const active = filters.includes(name);
             return (
               <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>

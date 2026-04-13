@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import FRichTextEditor from "@/components/FRichTextEditor";
-import { ALL_ORIXAS, ORIXA_COLOR, DEFAULT_CYCLES } from "@/lib/LOse";
+import { DEFAULT_ORIXAS, buildOrixaMaps, DEFAULT_CYCLES } from "@/lib/LOse";
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
@@ -25,6 +25,7 @@ export default function FOseAdmin() {
   const [tab, setTab] = useState("defaults");
   const [defaults, setDefaults] = useState({});
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
+  const [orixas, setOrixas] = useState(DEFAULT_ORIXAS);
   const [dayOverrides, setDayOverrides] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,14 +47,16 @@ export default function FOseAdmin() {
   useEffect(() => {
     async function load() {
       try {
-        const [defSnap, daySnap, cycSnap] = await Promise.all([
+        const [defSnap, daySnap, cycSnap, oxSnap] = await Promise.all([
           getDoc(doc(db, "settings", "oseDefaults")),
           getDoc(doc(db, "settings", "oseData")),
           getDoc(doc(db, "settings", "oseCycles")),
+          getDoc(doc(db, "settings", "oseOrixas")),
         ]);
         if (defSnap.exists()) setDefaults(defSnap.data());
         if (daySnap.exists()) setDayOverrides(daySnap.data());
         if (cycSnap.exists()) setCycles(cycSnap.data());
+        if (oxSnap.exists() && oxSnap.data().list) setOrixas(oxSnap.data().list);
       } catch (err) {
         console.error("Erro ao carregar:", err);
       } finally {
@@ -214,6 +217,52 @@ export default function FOseAdmin() {
     }
   }
 
+  const { colors: ORIXA_COLOR } = buildOrixaMaps(orixas);
+
+  async function saveOrixas(next) {
+    setSaving(true);
+    try {
+      await setDoc(doc(db, "settings", "oseOrixas"), { list: next });
+    } catch (err) { alert("Erro: " + err.message); }
+    setSaving(false);
+  }
+
+  function updateOrixa(index, field, value) {
+    const next = [...orixas];
+    next[index] = { ...next[index], [field]: value };
+    setOrixas(next);
+    saveOrixas(next);
+  }
+
+  function addOrixa() {
+    const next = [...orixas, { name: "Novo Òrìṣà", color: "#6b7280", bg: "#f3f4f6" }];
+    setOrixas(next);
+    saveOrixas(next);
+  }
+
+  async function removeOrixa(index) {
+    const target = orixas[index];
+    if (!confirm(`Remover o Òrìṣà "${target.name}"?\n\nIsso também vai retirá-lo dos ciclos que o incluem.`)) return;
+    const next = orixas.filter((_, i) => i !== index);
+    setOrixas(next);
+    await saveOrixas(next);
+
+    // Remove das ciclos
+    const cleanedCycles = { ...cycles };
+    let changed = false;
+    for (const id of Object.keys(cleanedCycles)) {
+      const cur = cleanedCycles[id].orixas || [];
+      if (cur.includes(target.name)) {
+        cleanedCycles[id] = { ...cleanedCycles[id], orixas: cur.filter((o) => o !== target.name) };
+        changed = true;
+      }
+    }
+    if (changed) {
+      setCycles(cleanedCycles);
+      await saveCycles(cleanedCycles);
+    }
+  }
+
   if (!isConselho) return null;
   if (loading) return <p style={{ color: "#888" }}>Carregando...</p>;
 
@@ -241,6 +290,7 @@ export default function FOseAdmin() {
 
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         {[
+          { id: "orixas", label: "Òrìṣà" },
           { id: "defaults", label: "Conteúdo por Òrìṣà" },
           { id: "cycles", label: "Ciclos de Ọ̀sẹ̀" },
           { id: "period", label: "Configuração do Período" },
@@ -251,6 +301,41 @@ export default function FOseAdmin() {
         ))}
       </div>
 
+      {/* TAB: Òrìṣà — CRUD */}
+      {tab === "orixas" && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+            <p style={{ fontSize: "0.82rem", color: "#888", margin: 0 }}>
+              Adicione, edite ou remova Òrìṣà do sistema. Alterações refletem em ciclos, conteúdos e calendário.
+            </p>
+            <button onClick={addOrixa} className="btn btn-primary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>
+              + Novo Òrìṣà
+            </button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "0.75rem" }}>
+            {orixas.map((ox, i) => (
+              <div key={i} className="card" style={{ borderLeft: `4px solid ${ox.color}`, padding: "0.85rem 1rem" }}>
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "0.72rem", color: "#888" }}>Nome</label>
+                    <input className="input-field" value={ox.name} onChange={(e) => updateOrixa(i, "name", e.target.value)} style={{ padding: "0.4rem 0.6rem", fontSize: "0.88rem", fontWeight: 600, color: ox.color }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.72rem", color: "#888", display: "block" }}>Cor</label>
+                    <input type="color" value={ox.color} onChange={(e) => updateOrixa(i, "color", e.target.value)} style={{ width: "40px", height: "36px", padding: 0, border: "1px solid #e5e7eb", borderRadius: "6px", cursor: "pointer" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.72rem", color: "#888", display: "block" }}>Fundo</label>
+                    <input type="color" value={ox.bg} onChange={(e) => updateOrixa(i, "bg", e.target.value)} style={{ width: "40px", height: "36px", padding: 0, border: "1px solid #e5e7eb", borderRadius: "6px", cursor: "pointer" }} />
+                  </div>
+                  <button onClick={() => removeOrixa(i)} title="Remover Òrìṣà" style={{ padding: "0.4rem 0.7rem", background: "none", border: "1.5px solid #fecaca", borderRadius: "6px", color: "var(--egbe-red)", cursor: "pointer", fontSize: "0.85rem", height: "36px" }}>✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* TAB: Conteúdo por Òrìṣà */}
       {tab === "defaults" && (
         <div>
@@ -258,7 +343,7 @@ export default function FOseAdmin() {
             Os conteúdos aqui aparecem em todos os dias regidos pelo respectivo Òrìṣà.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1rem" }}>
-            {ALL_ORIXAS.map(({ name, color }) => {
+            {orixas.map(({ name, color }) => {
               const data = defaults[name] || {};
               return (
                 <div key={name} className="card" style={{ borderTop: `4px solid ${color}` }}>
@@ -333,7 +418,7 @@ export default function FOseAdmin() {
 
                 <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666", marginBottom: "0.4rem", display: "block" }}>Òrìṣà do ciclo</label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.35rem" }}>
-                  {ALL_ORIXAS.map(({ name, color }) => {
+                  {orixas.map(({ name, color }) => {
                     const active = (cycle.orixas || []).includes(name);
                     return (
                       <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.35rem 0.5rem", background: active ? color + "15" : "white", border: `1px solid ${active ? color : "#e5e7eb"}`, borderRadius: "6px", cursor: "pointer", fontSize: "0.78rem" }}>
@@ -438,7 +523,7 @@ export default function FOseAdmin() {
                 Òrìṣà que regem este dia
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "0.5rem" }}>
-                {ALL_ORIXAS.map(({ name, color }) => {
+                {orixas.map(({ name, color }) => {
                   const active = selectedOrixas.includes(name);
                   return (
                     <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", background: active ? color + "15" : "white", border: `1.5px solid ${active ? color : "#e5e7eb"}`, borderRadius: "8px", cursor: "pointer" }}>
