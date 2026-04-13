@@ -20,6 +20,7 @@ export default function FOseCalendar() {
   const [curMonth, setCurMonth] = useState(new Date().getMonth());
   const [selDay, setSelDay] = useState(null);
   const [filters, setFilters] = useState([]);
+  const [cycleFilters, setCycleFilters] = useState([]);
   const [dayOverrides, setDayOverrides] = useState({});
   const [defaults, setDefaults] = useState({});
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
@@ -128,6 +129,46 @@ export default function FOseCalendar() {
         </div>
       </div>
 
+      {/* Filtro por Ciclo */}
+      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Ciclo</span>
+          {cycleFilters.length > 0 && (
+            <button onClick={() => setCycleFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
+              Limpar ({cycleFilters.length})
+            </button>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          {Object.values(cycles || {}).map((c) => {
+            const color = c.color || "#6b7280";
+            const active = cycleFilters.includes(c.id);
+            return (
+              <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
+                <span style={{
+                  width: "18px", height: "18px", borderRadius: "50%",
+                  border: `2px solid ${color}`,
+                  background: active ? color : "white",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => setCycleFilters(active ? cycleFilters.filter((f) => f !== c.id) : [...cycleFilters, c.id])}
+                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                />
+                <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
+                  {c.name}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Navegação */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <button onClick={() => changeMonth(-1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}>←</button>
@@ -147,11 +188,14 @@ export default function FOseCalendar() {
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const d = i + 1;
             const date = new Date(curYear, curMonth, d);
-            const orixas = getOrixasForDay(curYear, curMonth, d);
-            const mainColor = orixas[0] ? ORIXA_COLOR[orixas[0]] : "#ccc";
+            const dayOrixas = getOrixasForDay(curYear, curMonth, d);
+            const dayCycles = getCyclesForDay(curYear, curMonth, d);
+            const mainColor = dayOrixas[0] ? ORIXA_COLOR[dayOrixas[0]] : "#ccc";
             const isToday = date.toDateString() === today.toDateString();
             const isSel = selDay === d;
-            const isDimmed = filters.length > 0 && !orixas.some((ox) => filters.includes(ox));
+            const matchesOrixa = filters.length === 0 || dayOrixas.some((ox) => filters.includes(ox));
+            const matchesCycle = cycleFilters.length === 0 || dayCycles.some((c) => cycleFilters.includes(c.id));
+            const isDimmed = !matchesOrixa || !matchesCycle;
             return (
               <div key={d} onClick={() => setSelDay(d)} style={{
                 padding: "0.5rem 0.25rem", borderRadius: "8px", cursor: "pointer", textAlign: "center",
@@ -162,7 +206,7 @@ export default function FOseCalendar() {
               }}>
                 <div style={{ fontSize: "0.85rem", fontWeight: 600, color: isSel ? "white" : "#333" }}>{d}</div>
                 <div style={{ display: "flex", gap: "2px", justifyContent: "center", marginTop: "2px", flexWrap: "wrap", maxWidth: "60px", marginLeft: "auto", marginRight: "auto" }}>
-                  {orixas.map((ox) => (
+                  {dayOrixas.map((ox) => (
                     <div key={ox} style={{ width: "6px", height: "6px", borderRadius: "50%", background: isSel ? "rgba(255,255,255,0.7)" : (ORIXA_COLOR[ox] || "#888") }} />
                   ))}
                 </div>
