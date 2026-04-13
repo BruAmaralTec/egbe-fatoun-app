@@ -54,6 +54,11 @@ export default function FOseAdmin() {
   const [resetStart, setResetStart] = useState("");
   const [resetEnd, setResetEnd] = useState("");
 
+  // Gerar calendário
+  const [genStart, setGenStart] = useState("");
+  const [genEnd, setGenEnd] = useState("");
+  const [generating, setGenerating] = useState(false);
+
   useEffect(() => { if (profile && !isConselho) router.push("/dashboard"); }, [profile, isConselho, router]);
 
   useEffect(() => {
@@ -139,6 +144,59 @@ export default function FOseAdmin() {
     await resetKeys(keys);
   }
 
+  async function generateCalendar() {
+    if (!genStart || !genEnd) { alert("Selecione as duas datas do período."); return; }
+    const start = new Date(genStart + "T00:00:00");
+    const end = new Date(genEnd + "T00:00:00");
+    if (start > end) { alert("Data inicial deve ser anterior à final."); return; }
+
+    // Coleta Òrìṣà com ciclo configurado
+    const configured = ALL_ORIXAS
+      .map(({ name }) => {
+        const d = defaults[name] || {};
+        if (!d.startDate || !d.cycleDays || d.cycleDays < 1) return null;
+        return { name, startDate: new Date(d.startDate + "T00:00:00"), cycleDays: d.cycleDays };
+      })
+      .filter(Boolean);
+
+    if (configured.length === 0) {
+      alert("Nenhum Òrìṣà tem ciclo configurado. Preencha 'Primeiro dia' e 'A cada X dias' na aba Conteúdo por Òrìṣà.");
+      return;
+    }
+
+    const totalDays = Math.floor((end - start) / 86400000) + 1;
+    if (!confirm(`Gerar calendário com ${configured.length} Òrìṣà para ${totalDays} dia(s)?\n\nIsso vai SOBRESCREVER as customizações existentes no período.`)) return;
+
+    setGenerating(true);
+    try {
+      const updated = { ...dayOverrides };
+      const oneDay = 86400000;
+      for (let t = start.getTime(); t <= end.getTime(); t += oneDay) {
+        const d = new Date(t);
+        const matching = configured
+          .filter(({ startDate, cycleDays }) => {
+            const diff = Math.floor((d - startDate) / oneDay);
+            return diff >= 0 && diff % cycleDays === 0;
+          })
+          .map((c) => c.name);
+        const key = dayKey(d.getFullYear(), d.getMonth(), d.getDate());
+        if (matching.length > 0) {
+          updated[key] = { orixas: matching };
+        } else {
+          // Sem match naquele dia, remove override pra cair no ciclo padrão
+          delete updated[key];
+        }
+      }
+      setDayOverrides(updated);
+      await persistOverrides(updated);
+      alert(`Calendário gerado para ${totalDays} dia(s).`);
+    } catch (err) {
+      alert("Erro ao gerar: " + err.message);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   async function resetPeriod() {
     if (!resetStart || !resetEnd) { alert("Selecione as duas datas do período."); return; }
     const start = new Date(resetStart).getTime();
@@ -213,6 +271,22 @@ export default function FOseAdmin() {
                       <label className="label">Link</label>
                       <input className="input-field" type="url" value={data.link || ""} onChange={(e) => updateDefault(name, "link", e.target.value)} placeholder="https://..." />
                     </div>
+                    <div style={{ padding: "0.75rem", background: "#f9fafb", borderRadius: "6px", border: "1px solid #e5e7eb", marginTop: "0.5rem" }}>
+                      <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#666", marginBottom: "0.5rem" }}>🗓️ Ciclo no calendário</p>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: "0.5rem" }}>
+                        <div>
+                          <label style={{ fontSize: "0.72rem", color: "#888" }}>Primeiro dia</label>
+                          <input className="input-field" type="date" value={data.startDate || ""} onChange={(e) => updateDefault(name, "startDate", e.target.value)} style={{ padding: "0.4rem 0.6rem", fontSize: "0.82rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.72rem", color: "#888" }}>A cada</label>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                            <input className="input-field" type="number" min="1" max="365" value={data.cycleDays || ""} onChange={(e) => updateDefault(name, "cycleDays", parseInt(e.target.value) || 0)} style={{ padding: "0.4rem 0.5rem", fontSize: "0.82rem" }} />
+                            <span style={{ fontSize: "0.75rem", color: "#888" }}>dias</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -232,6 +306,22 @@ export default function FOseAdmin() {
           <p style={{ fontSize: "0.82rem", color: "#888", marginBottom: "1rem" }}>
             Clique num dia e marque quais Òrìṣà(s) regem aquela data. Sem customização, o ciclo padrão de 4 dias é aplicado.
           </p>
+
+          {/* Gerar calendário */}
+          <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem", background: "#f0f7f3", border: "1px solid #d1fae5" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--egbe-green-dark)" }}>🗓️ Gerar calendário automaticamente:</span>
+              <input type="date" value={genStart} onChange={(e) => setGenStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
+              <span style={{ fontSize: "0.8rem", color: "#666" }}>até</span>
+              <input type="date" value={genEnd} onChange={(e) => setGenEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
+              <button onClick={generateCalendar} disabled={generating} className="btn btn-primary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>
+                {generating ? "Gerando..." : "Gerar calendário"}
+              </button>
+            </div>
+            <p style={{ fontSize: "0.72rem", color: "#666", marginTop: "0.5rem" }}>
+              Usa o "Primeiro dia" e "A cada X dias" de cada Òrìṣà (aba Conteúdo por Òrìṣà) para preencher o período. Sobrescreve customizações existentes.
+            </p>
+          </div>
 
           {/* Resets */}
           <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem" }}>
