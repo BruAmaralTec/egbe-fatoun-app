@@ -10,6 +10,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import FRichTextEditor from "@/components/FRichTextEditor";
@@ -333,15 +334,13 @@ export default function FOseAdmin() {
               <button onClick={generateCalendar} disabled={generating} className="btn btn-primary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>
                 {generating ? "Gerando..." : "Gerar calendário"}
               </button>
-              <a
+              <Link
                 href="/dashboard/ose"
-                target="_blank"
-                rel="noreferrer"
                 className="btn btn-secondary"
                 style={{ fontSize: "0.82rem", padding: "0.4rem 1rem", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
               >
-                📅 Visualizar ↗
-              </a>
+                📅 Visualizar
+              </Link>
             </div>
             <p style={{ fontSize: "0.72rem", color: "#666", marginTop: "0.5rem" }}>
               Aplica os ciclos abaixo ao período escolhido. Sobrescreve customizações existentes.
