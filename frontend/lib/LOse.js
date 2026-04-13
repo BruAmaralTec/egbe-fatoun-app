@@ -28,7 +28,6 @@ export const ALL_ORIXAS = [
   { name: "Ológúnèdè", color: "#a16207", bg: "#fef3c7" },
   // Adicionais
   { name: "Yemọjá", color: "#0369a1", bg: "#dbeafe" },
-  { name: "Ifá", color: "#14532d", bg: "#d1fae5" },
 ];
 
 export const ORIXA_COLOR = Object.fromEntries(ALL_ORIXAS.map((o) => [o.name, o.color]));
