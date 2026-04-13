@@ -21,6 +21,9 @@ export default function FOseCalendar() {
   const [selDay, setSelDay] = useState(null);
   const [filters, setFilters] = useState([]);
   const [cycleFilters, setCycleFilters] = useState([]);
+  const [timeFilter, setTimeFilter] = useState("mes"); // hoje | semana | mes | periodo
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
   const [dayOverrides, setDayOverrides] = useState({});
   const [defaults, setDefaults] = useState({});
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
@@ -43,6 +46,28 @@ export default function FOseCalendar() {
   }, []);
 
   const { colors: ORIXA_COLOR, bgs: ORIXA_BG } = buildOrixaMaps(orixas);
+
+  function inTimeFilter(date) {
+    const t0 = new Date();
+    t0.setHours(0, 0, 0, 0);
+    const d0 = new Date(date);
+    d0.setHours(0, 0, 0, 0);
+    if (timeFilter === "hoje") return d0.getTime() === t0.getTime();
+    if (timeFilter === "semana") {
+      // semana atual (segunda a domingo)
+      const day = t0.getDay() === 0 ? 6 : t0.getDay() - 1;
+      const start = new Date(t0); start.setDate(t0.getDate() - day);
+      const end = new Date(start); end.setDate(start.getDate() + 6);
+      return d0 >= start && d0 <= end;
+    }
+    if (timeFilter === "periodo") {
+      if (!periodStart || !periodEnd) return true;
+      const s = new Date(periodStart + "T00:00:00");
+      const e = new Date(periodEnd + "T00:00:00");
+      return d0 >= s && d0 <= e;
+    }
+    return true; // mes: sem restrição extra (o grid já é do mês)
+  }
 
   function getOrixasForDay(y, m, d) {
     const key = `${y}-${m}-${d}`;
@@ -169,6 +194,42 @@ export default function FOseCalendar() {
         </div>
       </div>
 
+      {/* Filtro de tempo */}
+      <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+        {[
+          { id: "hoje", label: "Hoje" },
+          { id: "semana", label: "Semana" },
+          { id: "mes", label: "Mês" },
+          { id: "periodo", label: "Período" },
+        ].map((opt) => (
+          <button
+            key={opt.id}
+            onClick={() => {
+              setTimeFilter(opt.id);
+              // Ao mudar pra hoje/semana, navega pro mês atual se necessário
+              if (opt.id === "hoje" || opt.id === "semana") {
+                const now = new Date();
+                if (now.getMonth() !== curMonth || now.getFullYear() !== curYear) {
+                  setCurMonth(now.getMonth());
+                  setCurYear(now.getFullYear());
+                }
+              }
+            }}
+            className={`btn ${timeFilter === opt.id ? "btn-primary" : "btn-secondary"}`}
+            style={{ fontSize: "0.82rem", padding: "0.35rem 0.9rem" }}
+          >
+            {opt.label}
+          </button>
+        ))}
+        {timeFilter === "periodo" && (
+          <>
+            <input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "150px", fontSize: "0.8rem" }} />
+            <span style={{ fontSize: "0.8rem", color: "#888" }}>até</span>
+            <input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "150px", fontSize: "0.8rem" }} />
+          </>
+        )}
+      </div>
+
       {/* Navegação */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <button onClick={() => changeMonth(-1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}>←</button>
@@ -195,7 +256,8 @@ export default function FOseCalendar() {
             const isSel = selDay === d;
             const matchesOrixa = filters.length === 0 || dayOrixas.some((ox) => filters.includes(ox));
             const matchesCycle = cycleFilters.length === 0 || dayCycles.some((c) => cycleFilters.includes(c.id));
-            const isDimmed = !matchesOrixa || !matchesCycle;
+            const matchesTime = inTimeFilter(date);
+            const isDimmed = !matchesOrixa || !matchesCycle || !matchesTime;
             return (
               <div key={d} onClick={() => setSelDay(d)} style={{
                 padding: "0.5rem 0.25rem", borderRadius: "8px", cursor: "pointer", textAlign: "center",
