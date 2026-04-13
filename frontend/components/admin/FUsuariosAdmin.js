@@ -29,6 +29,8 @@ export default function FUsuariosAdmin() {
   const [saving, setSaving] = useState(false);
   const [addingIniciacao, setAddingIniciacao] = useState(false);
   const [novaIniciacao, setNovaIniciacao] = useState({ tipo: "orisa", nome: "", data: "", oruko: "" });
+  const [addingCargo, setAddingCargo] = useState(false);
+  const [novoCargo, setNovoCargo] = useState({ nome: "", data: "", descricao: "" });
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({ displayName: "", email: "", password: "", role: "cliente" });
   const [createSaving, setCreateSaving] = useState(false);
@@ -48,12 +50,16 @@ export default function FUsuariosAdmin() {
   function openEdit(user) {
     setEditing(user.id);
     setForm({
-      displayName: user.displayName || "", email: user.email || "",
+      displayName: user.displayName || "", communityName: user.communityName || "",
+      email: user.email || "",
       cpf: user.cpf || "", phone: user.phone || "",
       role: user.role || "cliente", oruko: user.oruko || "",
-      initiacoes: user.initiacoes || [], observacoes: user.observacoes || "",
+      initiacoes: user.initiacoes || [],
+      cargos: user.cargos || [],
+      observacoes: user.observacoes || "",
     });
     setAddingIniciacao(false);
+    setAddingCargo(false);
   }
 
   async function handleSave() {
@@ -74,6 +80,14 @@ export default function FUsuariosAdmin() {
   }
 
   function removeIniciacao(id) { setForm({ ...form, initiacoes: form.initiacoes.filter((i) => i.id !== id) }); }
+
+  function addCargo() {
+    if (!novoCargo.nome) return;
+    setForm({ ...form, cargos: [...(form.cargos || []), { ...novoCargo, id: Date.now().toString() }] });
+    setNovoCargo({ nome: "", data: "", descricao: "" });
+    setAddingCargo(false);
+  }
+  function removeCargo(id) { setForm({ ...form, cargos: (form.cargos || []).filter((c) => c.id !== id) }); }
 
   async function handleCreate() {
     const { displayName, email, password, role } = createForm;
@@ -186,6 +200,7 @@ export default function FUsuariosAdmin() {
             <h2 style={{ fontSize: "1.3rem", marginBottom: "1.5rem" }}>Editar Usuário</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
               <div><label className="label">Nome completo</label><input className="input-field" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} /></div>
+              <div><label className="label">Chamado na comunidade</label><input className="input-field" value={form.communityName} onChange={(e) => setForm({ ...form, communityName: e.target.value })} placeholder="Apelido na comunidade" /></div>
               <div><label className="label">Email</label><input className="input-field" value={form.email} disabled style={{ opacity: 0.6 }} /></div>
               <div><label className="label">CPF</label><input className="input-field" value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" /></div>
               <div><label className="label">Telefone</label><input className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(00) 00000-0000" /></div>
@@ -234,6 +249,41 @@ export default function FUsuariosAdmin() {
                 </div>
               )}
             </div>
+
+            {/* Cargos */}
+            <div style={{ marginBottom: "1rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                <label className="label" style={{ margin: 0 }}>Cargos recebidos</label>
+                <button onClick={() => setAddingCargo(true)} style={{ padding: "0.25rem 0.6rem", background: "var(--egbe-yellow)", color: "white", border: "none", borderRadius: "4px", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer" }}>+ Adicionar</button>
+              </div>
+              {(form.cargos || []).length > 0 ? form.cargos.map((c) => (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 0.75rem", background: "#fef3c7", borderRadius: "8px", border: "1px solid #fde68a", marginBottom: "0.5rem" }}>
+                  <div>
+                    <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "#92400e" }}>{c.nome}</span>
+                    {c.data && <span style={{ color: "#888", fontSize: "0.8rem", marginLeft: "0.5rem" }}>— {c.data}</span>}
+                    {c.descricao && <p style={{ color: "#666", fontSize: "0.8rem", marginTop: "0.15rem" }}>{c.descricao}</p>}
+                  </div>
+                  <button onClick={() => removeCargo(c.id)} style={{ background: "none", border: "none", color: "var(--egbe-red)", cursor: "pointer" }}>✕</button>
+                </div>
+              )) : <p style={{ color: "#ccc", fontSize: "0.85rem", fontStyle: "italic" }}>Nenhum cargo registrado.</p>}
+              {addingCargo && (
+                <div style={{ marginTop: "0.75rem", padding: "1rem", background: "#fffbeb", borderRadius: "8px", border: "1px solid #fde68a" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                    <div><label className="label">Nome do cargo</label><input className="input-field" value={novoCargo.nome} onChange={(e) => setNovoCargo({ ...novoCargo, nome: e.target.value })} placeholder="Ex: Ìyálọ́rìṣà, Bàbálòrìṣà, Ẹlẹ́ẹ̀gun..." /></div>
+                    <div><label className="label">Data</label><input className="input-field" type="date" value={novoCargo.data} onChange={(e) => setNovoCargo({ ...novoCargo, data: e.target.value })} /></div>
+                  </div>
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <label className="label">Descrição (opcional)</label>
+                    <input className="input-field" value={novoCargo.descricao} onChange={(e) => setNovoCargo({ ...novoCargo, descricao: e.target.value })} placeholder="Detalhes sobre o cargo..." />
+                  </div>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button className="btn btn-primary" onClick={addCargo} style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}>Adicionar</button>
+                    <button onClick={() => setAddingCargo(false)} style={{ padding: "0.4rem 1rem", background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: "0.82rem" }}>Cancelar</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div style={{ marginBottom: "1.5rem" }}>
               <label className="label">Observações</label>
               <FRichTextEditor value={form.observacoes} onChange={(html) => setForm({ ...form, observacoes: html })} placeholder="Notas internas sobre o usuário..." minHeight="120px" />

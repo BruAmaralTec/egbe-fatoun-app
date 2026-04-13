@@ -20,10 +20,12 @@ export default function FPerfil() {
   if (!profile) return null;
 
   const initiacoes = profile.initiacoes || [];
+  const cargos = profile.cargos || [];
 
   function startEditing() {
     setForm({
       displayName: profile.displayName || "",
+      communityName: profile.communityName || "",
       phone: profile.phone || "",
       cpf: profile.cpf || "",
     });
@@ -36,6 +38,7 @@ export default function FPerfil() {
       const ref = doc(db, "users", user.uid);
       await updateDoc(ref, {
         displayName: form.displayName,
+        communityName: form.communityName,
         phone: form.phone,
         cpf: form.cpf,
       });
@@ -108,6 +111,11 @@ export default function FPerfil() {
                 <input style={fieldStyle} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
               </div>
               <div>
+                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Como é chamado na comunidade</label>
+                <input style={fieldStyle} value={form.communityName} onChange={(e) => setForm({ ...form, communityName: e.target.value })} placeholder="Apelido ou nome usado pela comunidade" />
+                <span style={{ fontSize: "0.72rem", color: "#aaa" }}>Este nome aparece na tela de início.</span>
+              </div>
+              <div>
                 <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Telefone</label>
                 <input style={fieldStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(11) 99999-9999" />
               </div>
@@ -131,6 +139,7 @@ export default function FPerfil() {
               <tbody>
                 {[
                   ["Nome", profile.displayName || "Não informado"],
+                  ["Chamado na comunidade", profile.communityName || "Não informado"],
                   ["Email", profile.email],
                   ["CPF", profile.cpf || "Não informado"],
                   ["Telefone", profile.phone || "Não informado"],
@@ -171,6 +180,25 @@ export default function FPerfil() {
           )) : (
             <p style={{ color: "#ccc", fontStyle: "italic", fontSize: "0.88rem" }}>Nenhuma iniciação registrada.</p>
           )}
+        </div>
+
+        {/* Cargos recebidos */}
+        <div className="card">
+          <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Cargos recebidos</h3>
+          {cargos.length > 0 ? cargos.map((c, i) => (
+            <div key={c.id || i} style={{ padding: "0.75rem", background: "#fef3c7", borderRadius: "8px", border: "1px solid #fde68a", marginBottom: "0.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontWeight: 600, color: "#92400e" }}>{c.nome}</span>
+                {c.data && <span style={{ fontSize: "0.8rem", color: "#888" }}>{c.data}</span>}
+              </div>
+              {c.descricao && <p style={{ fontSize: "0.82rem", color: "#666", marginTop: "0.2rem" }}>{c.descricao}</p>}
+            </div>
+          )) : (
+            <p style={{ color: "#ccc", fontStyle: "italic", fontSize: "0.88rem" }}>Nenhum cargo registrado.</p>
+          )}
+          <p style={{ fontSize: "0.75rem", color: "#aaa", marginTop: "0.5rem", fontStyle: "italic" }}>
+            Cargos são atribuídos pelos administradores da casa.
+          </p>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ export default function FDashboardHome() {
   return (
     <div>
       <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>
-        Àṣẹ, {profile?.displayName || "Visitante"}! 🙏
+        Àṣẹ, {profile?.communityName || profile?.displayName || "Visitante"}! 🙏
       </h1>
       <p style={{ color: "#666", fontSize: "0.95rem", marginBottom: "2rem" }}>
         Bem-vindo(a) ao painel do Ẹgbẹ́ Fátọ́ún
