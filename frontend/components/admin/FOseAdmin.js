@@ -2,9 +2,7 @@
 // components/admin/FOseAdmin.js
 // [F = Frontend Component]
 // Gestão do Calendário de Ọ̀sẹ̀ — admin
-// - Conteúdo padrão por Òrìṣà (texto, áudio, link)
-// - Configuração do período: seleção de Òrìṣà(s) por dia,
-//   com resets (dia/mês/ano/período)
+// Abas: Conteúdo por Òrìṣà, Ciclos de Ọ̀sẹ̀, Configuração do Período
 // ========================================
 
 "use client";
@@ -15,24 +13,10 @@ import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import FRichTextEditor from "@/components/FRichTextEditor";
+import { ALL_ORIXAS, ORIXA_COLOR, DEFAULT_CYCLES } from "@/lib/LOse";
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-const OSE_TYPES = [
-  { id: 0, orixas: ["Ọ̀ṣun", "Yemọjá"], color: "#D4A017", bg: "#fef3cd" },
-  { id: 1, orixas: ["Ògún", "Ọ̀ṣọ́ọ̀sì"], color: "#1B6B3A", bg: "#d1fae5" },
-  { id: 2, orixas: ["Ṣàngó", "Ọya"], color: "#B22222", bg: "#fde8e8" },
-  { id: 3, orixas: ["Obàtálá", "Ifá"], color: "#1a4080", bg: "#dbeafe" },
-];
-
-const ALL_ORIXAS = OSE_TYPES.flatMap((t) => t.orixas.map((ox) => ({ name: ox, color: t.color, bg: t.bg })));
-const ORIXA_COLOR = Object.fromEntries(ALL_ORIXAS.map((o) => [o.name, o.color]));
-
-const EPOCH = new Date(2026, 0, 1);
-function getDefaultOse(date) {
-  const diff = Math.floor((date - EPOCH) / 86400000);
-  return OSE_TYPES[((diff % 4) + 4) % 4];
-}
 function dayKey(y, m, d) { return `${y}-${m}-${d}`; }
 
 export default function FOseAdmin() {
@@ -40,21 +24,19 @@ export default function FOseAdmin() {
   const router = useRouter();
   const [tab, setTab] = useState("defaults");
   const [defaults, setDefaults] = useState({});
-  const [dayOverrides, setDayOverrides] = useState({}); // { "2026-0-1": { orixas: ["..."] } }
+  const [cycles, setCycles] = useState(DEFAULT_CYCLES);
+  const [dayOverrides, setDayOverrides] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Para configuração do período
   const [curYear, setCurYear] = useState(new Date().getFullYear());
   const [curMonth, setCurMonth] = useState(new Date().getMonth());
   const [selDay, setSelDay] = useState(null);
 
-  // Reset por período
   const [resetStart, setResetStart] = useState("");
   const [resetEnd, setResetEnd] = useState("");
 
-  // Gerar calendário
   const [genStart, setGenStart] = useState("");
   const [genEnd, setGenEnd] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -64,12 +46,14 @@ export default function FOseAdmin() {
   useEffect(() => {
     async function load() {
       try {
-        const [defSnap, daySnap] = await Promise.all([
+        const [defSnap, daySnap, cycSnap] = await Promise.all([
           getDoc(doc(db, "settings", "oseDefaults")),
           getDoc(doc(db, "settings", "oseData")),
+          getDoc(doc(db, "settings", "oseCycles")),
         ]);
         if (defSnap.exists()) setDefaults(defSnap.data());
         if (daySnap.exists()) setDayOverrides(daySnap.data());
+        if (cycSnap.exists()) setCycles(cycSnap.data());
       } catch (err) {
         console.error("Erro ao carregar:", err);
       } finally {
@@ -89,6 +73,14 @@ export default function FOseAdmin() {
     finally { setSaving(false); }
   }
 
+  async function saveCycles(next) {
+    setSaving(true);
+    try {
+      await setDoc(doc(db, "settings", "oseCycles"), next);
+    } catch (err) { alert("Erro ao salvar ciclos: " + err.message); }
+    setSaving(false);
+  }
+
   async function persistOverrides(updated) {
     setSaving(true);
     try {
@@ -101,10 +93,37 @@ export default function FOseAdmin() {
     setDefaults((prev) => ({ ...prev, [orixa]: { ...(prev[orixa] || {}), [field]: value } }));
   }
 
+  function updateCycle(id, field, value) {
+    const next = { ...cycles, [id]: { ...cycles[id], [field]: value } };
+    setCycles(next);
+    saveCycles(next);
+  }
+
+  function addCycle() {
+    const id = "cycle-" + Date.now();
+    const next = { ...cycles, [id]: { id, name: "Novo Ciclo", orixas: [], startDate: "", cycleDays: 4, color: "#6b7280" } };
+    setCycles(next);
+    saveCycles(next);
+  }
+
+  function removeCycle(id) {
+    if (!confirm(`Remover o ciclo "${cycles[id]?.name}"?`)) return;
+    const next = { ...cycles };
+    delete next[id];
+    setCycles(next);
+    saveCycles(next);
+  }
+
+  function toggleOrixaInCycle(id, orixaName) {
+    const cur = cycles[id].orixas || [];
+    const next = cur.includes(orixaName) ? cur.filter((o) => o !== orixaName) : [...cur, orixaName];
+    updateCycle(id, "orixas", next);
+  }
+
   function getOrixasForDay(y, m, d) {
     const key = dayKey(y, m, d);
     if (dayOverrides[key]?.orixas) return dayOverrides[key].orixas;
-    return getDefaultOse(new Date(y, m, d)).orixas;
+    return [];
   }
 
   async function setOrixasForDay(y, m, d, orixas) {
@@ -116,18 +135,14 @@ export default function FOseAdmin() {
 
   async function resetKeys(keys) {
     if (keys.length === 0) return;
-    if (!confirm(`Resetar ${keys.length} dia(s)? Isso volta ao ciclo padrão de 4 dias.`)) return;
+    if (!confirm(`Resetar ${keys.length} dia(s)?`)) return;
     const updated = { ...dayOverrides };
     keys.forEach((k) => { delete updated[k]; });
     setDayOverrides(updated);
     await persistOverrides(updated);
   }
 
-  async function resetDay() {
-    if (!selDay) return;
-    await resetKeys([dayKey(curYear, curMonth, selDay)]);
-  }
-
+  async function resetDay() { if (selDay) await resetKeys([dayKey(curYear, curMonth, selDay)]); }
   async function resetMonth() {
     const keys = Object.keys(dayOverrides).filter((k) => {
       const [y, m] = k.split("-").map(Number);
@@ -135,11 +150,22 @@ export default function FOseAdmin() {
     });
     await resetKeys(keys);
   }
-
   async function resetYear() {
     const keys = Object.keys(dayOverrides).filter((k) => {
       const [y] = k.split("-").map(Number);
       return y === curYear;
+    });
+    await resetKeys(keys);
+  }
+  async function resetPeriod() {
+    if (!resetStart || !resetEnd) { alert("Selecione as duas datas."); return; }
+    const start = new Date(resetStart + "T00:00:00").getTime();
+    const end = new Date(resetEnd + "T00:00:00").getTime();
+    if (start > end) { alert("Data inicial deve ser anterior à final."); return; }
+    const keys = Object.keys(dayOverrides).filter((k) => {
+      const [y, m, d] = k.split("-").map(Number);
+      const t = new Date(y, m, d).getTime();
+      return t >= start && t <= end;
     });
     await resetKeys(keys);
   }
@@ -150,42 +176,33 @@ export default function FOseAdmin() {
     const end = new Date(genEnd + "T00:00:00");
     if (start > end) { alert("Data inicial deve ser anterior à final."); return; }
 
-    // Coleta Òrìṣà com ciclo configurado
-    const configured = ALL_ORIXAS
-      .map(({ name }) => {
-        const d = defaults[name] || {};
-        if (!d.startDate || !d.cycleDays || d.cycleDays < 1) return null;
-        return { name, startDate: new Date(d.startDate + "T00:00:00"), cycleDays: d.cycleDays };
-      })
-      .filter(Boolean);
-
-    if (configured.length === 0) {
-      alert("Nenhum Òrìṣà tem ciclo configurado. Preencha 'Primeiro dia' e 'A cada X dias' na aba Conteúdo por Òrìṣà.");
+    const validCycles = Object.values(cycles).filter((c) => c.startDate && c.cycleDays > 0 && (c.orixas || []).length > 0);
+    if (validCycles.length === 0) {
+      alert("Nenhum ciclo válido. Configure na aba 'Ciclos de Ọ̀sẹ̀' com data inicial, período e Òrìṣà.");
       return;
     }
 
     const totalDays = Math.floor((end - start) / 86400000) + 1;
-    if (!confirm(`Gerar calendário com ${configured.length} Òrìṣà para ${totalDays} dia(s)?\n\nIsso vai SOBRESCREVER as customizações existentes no período.`)) return;
+    if (!confirm(`Gerar calendário com ${validCycles.length} ciclo(s) para ${totalDays} dia(s)?\n\nIsso vai SOBRESCREVER as customizações existentes no período.`)) return;
 
     setGenerating(true);
     try {
       const updated = { ...dayOverrides };
       const oneDay = 86400000;
+      const cycleStarts = validCycles.map((c) => ({ ...c, startTs: new Date(c.startDate + "T00:00:00").getTime() }));
+
       for (let t = start.getTime(); t <= end.getTime(); t += oneDay) {
-        const d = new Date(t);
-        const matching = configured
-          .filter(({ startDate, cycleDays }) => {
-            const diff = Math.floor((d - startDate) / oneDay);
-            return diff >= 0 && diff % cycleDays === 0;
-          })
-          .map((c) => c.name);
-        const key = dayKey(d.getFullYear(), d.getMonth(), d.getDate());
-        if (matching.length > 0) {
-          updated[key] = { orixas: matching };
-        } else {
-          // Sem match naquele dia, remove override pra cair no ciclo padrão
-          delete updated[key];
+        const matching = new Set();
+        for (const c of cycleStarts) {
+          const diff = Math.floor((t - c.startTs) / oneDay);
+          if (diff >= 0 && diff % c.cycleDays === 0) {
+            (c.orixas || []).forEach((o) => matching.add(o));
+          }
         }
+        const d = new Date(t);
+        const key = dayKey(d.getFullYear(), d.getMonth(), d.getDate());
+        if (matching.size > 0) updated[key] = { orixas: Array.from(matching) };
+        else delete updated[key];
       }
       setDayOverrides(updated);
       await persistOverrides(updated);
@@ -197,23 +214,9 @@ export default function FOseAdmin() {
     }
   }
 
-  async function resetPeriod() {
-    if (!resetStart || !resetEnd) { alert("Selecione as duas datas do período."); return; }
-    const start = new Date(resetStart).getTime();
-    const end = new Date(resetEnd).getTime();
-    if (start > end) { alert("Data inicial deve ser anterior à final."); return; }
-    const keys = Object.keys(dayOverrides).filter((k) => {
-      const [y, m, d] = k.split("-").map(Number);
-      const t = new Date(y, m, d).getTime();
-      return t >= start && t <= end;
-    });
-    await resetKeys(keys);
-  }
-
   if (!isConselho) return null;
   if (loading) return <p style={{ color: "#888" }}>Carregando...</p>;
 
-  // Calendário
   const firstDay = new Date(curYear, curMonth, 1);
   let startDow = firstDay.getDay();
   startDow = startDow === 0 ? 6 : startDow - 1;
@@ -233,17 +236,19 @@ export default function FOseAdmin() {
     <div>
       <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Gestão do Calendário de Ọ̀sẹ̀</h1>
       <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-        Configure os conteúdos por Òrìṣà e defina quais Òrìṣà(s) regem cada dia.
+        Configure conteúdos por Òrìṣà, monte ciclos de Ọ̀sẹ̀ e gere o calendário do período.
       </p>
 
-      {/* Tabs */}
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-        <button onClick={() => setTab("defaults")} className={`btn ${tab === "defaults" ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.85rem" }}>
-          Conteúdo por Òrìṣà
-        </button>
-        <button onClick={() => setTab("period")} className={`btn ${tab === "period" ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.85rem" }}>
-          Configuração do Período
-        </button>
+        {[
+          { id: "defaults", label: "Conteúdo por Òrìṣà" },
+          { id: "cycles", label: "Ciclos de Ọ̀sẹ̀" },
+          { id: "period", label: "Configuração do Período" },
+        ].map((t) => (
+          <button key={t.id} onClick={() => setTab(t.id)} className={`btn ${tab === t.id ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.85rem" }}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* TAB: Conteúdo por Òrìṣà */}
@@ -254,7 +259,7 @@ export default function FOseAdmin() {
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1rem" }}>
             {ALL_ORIXAS.map(({ name, color }) => {
-              const data = defaults[name] || { link: "", audio: "", text: "" };
+              const data = defaults[name] || {};
               return (
                 <div key={name} className="card" style={{ borderTop: `4px solid ${color}` }}>
                   <h3 style={{ color, fontSize: "1.1rem", marginBottom: "0.75rem" }}>{name}</h3>
@@ -271,22 +276,6 @@ export default function FOseAdmin() {
                       <label className="label">Link</label>
                       <input className="input-field" type="url" value={data.link || ""} onChange={(e) => updateDefault(name, "link", e.target.value)} placeholder="https://..." />
                     </div>
-                    <div style={{ padding: "0.75rem", background: "#f9fafb", borderRadius: "6px", border: "1px solid #e5e7eb", marginTop: "0.5rem" }}>
-                      <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#666", marginBottom: "0.5rem" }}>🗓️ Ciclo no calendário</p>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: "0.5rem" }}>
-                        <div>
-                          <label style={{ fontSize: "0.72rem", color: "#888" }}>Primeiro dia</label>
-                          <input className="input-field" type="date" value={data.startDate || ""} onChange={(e) => updateDefault(name, "startDate", e.target.value)} style={{ padding: "0.4rem 0.6rem", fontSize: "0.82rem" }} />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: "0.72rem", color: "#888" }}>A cada</label>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                            <input className="input-field" type="number" min="1" max="365" value={data.cycleDays || ""} onChange={(e) => updateDefault(name, "cycleDays", parseInt(e.target.value) || 0)} style={{ padding: "0.4rem 0.5rem", fontSize: "0.82rem" }} />
-                            <span style={{ fontSize: "0.75rem", color: "#888" }}>dias</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               );
@@ -300,17 +289,75 @@ export default function FOseAdmin() {
         </div>
       )}
 
+      {/* TAB: Ciclos de Ọ̀sẹ̀ */}
+      {tab === "cycles" && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <p style={{ fontSize: "0.82rem", color: "#888" }}>
+              Cada ciclo agrupa vários Òrìṣà sob um nome e se repete a cada X dias a partir da data inicial.
+            </p>
+            <button onClick={addCycle} className="btn btn-primary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>+ Novo ciclo</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "1rem" }}>
+            {Object.values(cycles).map((cycle) => (
+              <div key={cycle.id} className="card" style={{ borderTop: `4px solid ${cycle.color || "#6b7280"}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", gap: "0.5rem" }}>
+                  <input
+                    value={cycle.name}
+                    onChange={(e) => updateCycle(cycle.id, "name", e.target.value)}
+                    className="input-field"
+                    style={{ fontWeight: 600, fontSize: "1rem", color: cycle.color, flex: 1 }}
+                    placeholder="Nome do ciclo"
+                  />
+                  <input
+                    type="color"
+                    value={cycle.color || "#6b7280"}
+                    onChange={(e) => updateCycle(cycle.id, "color", e.target.value)}
+                    style={{ width: "40px", height: "40px", padding: 0, border: "1px solid #e5e7eb", borderRadius: "6px", cursor: "pointer" }}
+                    title="Cor do ciclo"
+                  />
+                  <button onClick={() => removeCycle(cycle.id)} style={{ padding: "0.4rem 0.6rem", background: "none", border: "1.5px solid #fecaca", borderRadius: "6px", color: "var(--egbe-red)", cursor: "pointer", fontSize: "0.85rem" }}>✕</button>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                  <div>
+                    <label style={{ fontSize: "0.72rem", color: "#888" }}>Primeiro dia</label>
+                    <input className="input-field" type="date" value={cycle.startDate || ""} onChange={(e) => updateCycle(cycle.id, "startDate", e.target.value)} style={{ padding: "0.4rem 0.6rem", fontSize: "0.85rem" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.72rem", color: "#888" }}>A cada (dias)</label>
+                    <input className="input-field" type="number" min="1" max="365" value={cycle.cycleDays || ""} onChange={(e) => updateCycle(cycle.id, "cycleDays", parseInt(e.target.value) || 0)} style={{ padding: "0.4rem 0.6rem", fontSize: "0.85rem" }} />
+                  </div>
+                </div>
+
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666", marginBottom: "0.4rem", display: "block" }}>Òrìṣà do ciclo</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.35rem" }}>
+                  {ALL_ORIXAS.map(({ name, color }) => {
+                    const active = (cycle.orixas || []).includes(name);
+                    return (
+                      <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.35rem 0.5rem", background: active ? color + "15" : "white", border: `1px solid ${active ? color : "#e5e7eb"}`, borderRadius: "6px", cursor: "pointer", fontSize: "0.78rem" }}>
+                        <span style={{ width: "14px", height: "14px", borderRadius: "50%", border: `2px solid ${color}`, background: active ? color : "white", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {active && <span style={{ color: "white", fontSize: "0.55rem", fontWeight: 700 }}>✓</span>}
+                        </span>
+                        <input type="checkbox" checked={active} onChange={() => toggleOrixaInCycle(cycle.id, name)} style={{ position: "absolute", opacity: 0, pointerEvents: "none" }} />
+                        <span style={{ color: active ? color : "#444", fontWeight: active ? 600 : 500 }}>{name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* TAB: Configuração do Período */}
       {tab === "period" && (
         <div>
-          <p style={{ fontSize: "0.82rem", color: "#888", marginBottom: "1rem" }}>
-            Clique num dia e marque quais Òrìṣà(s) regem aquela data. Sem customização, o ciclo padrão de 4 dias é aplicado.
-          </p>
-
-          {/* Gerar calendário */}
           <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem", background: "#f0f7f3", border: "1px solid #d1fae5" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--egbe-green-dark)" }}>🗓️ Gerar calendário automaticamente:</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--egbe-green-dark)" }}>🗓️ Gerar calendário:</span>
               <input type="date" value={genStart} onChange={(e) => setGenStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
               <span style={{ fontSize: "0.8rem", color: "#666" }}>até</span>
               <input type="date" value={genEnd} onChange={(e) => setGenEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
@@ -319,11 +366,10 @@ export default function FOseAdmin() {
               </button>
             </div>
             <p style={{ fontSize: "0.72rem", color: "#666", marginTop: "0.5rem" }}>
-              Usa o "Primeiro dia" e "A cada X dias" de cada Òrìṣà (aba Conteúdo por Òrìṣà) para preencher o período. Sobrescreve customizações existentes.
+              Usa os ciclos configurados na aba "Ciclos de Ọ̀sẹ̀" para preencher o período. Sobrescreve customizações existentes.
             </p>
           </div>
 
-          {/* Resets */}
           <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
               <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#666", marginRight: "0.25rem" }}>Resetar:</span>
@@ -336,10 +382,9 @@ export default function FOseAdmin() {
               <input type="date" value={resetEnd} onChange={(e) => setResetEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
               <button onClick={resetPeriod} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Período</button>
             </div>
-            <p style={{ fontSize: "0.72rem", color: "#888", marginTop: "0.5rem" }}>Reset apaga customizações e volta o(s) dia(s) ao ciclo padrão de 4 dias.</p>
+            <p style={{ fontSize: "0.72rem", color: "#888", marginTop: "0.5rem" }}>Reset apaga customizações no(s) dia(s).</p>
           </div>
 
-          {/* Navegação do calendário */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <button onClick={() => changeMonth(-1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem" }}>←</button>
             <h3 style={{ fontSize: "1.2rem", margin: 0 }}>{MONTHS[curMonth]} {curYear}</h3>
@@ -360,7 +405,7 @@ export default function FOseAdmin() {
                 const orixas = getOrixasForDay(curYear, curMonth, d);
                 const isCustom = !!dayOverrides[key];
                 const isSel = selDay === d;
-                const mainColor = ORIXA_COLOR[orixas[0]] || "#888";
+                const mainColor = orixas[0] ? ORIXA_COLOR[orixas[0]] : "#ccc";
                 return (
                   <div key={d} onClick={() => setSelDay(d)} style={{
                     padding: "0.5rem 0.25rem", borderRadius: "8px", cursor: "pointer", textAlign: "center",
@@ -378,59 +423,40 @@ export default function FOseAdmin() {
                 );
               })}
             </div>
-            <p style={{ fontSize: "0.72rem", color: "#888", marginTop: "0.75rem" }}>Dias com <span style={{ border: "1px dashed #888", padding: "0 0.3rem", borderRadius: "3px" }}>borda tracejada</span> têm customização.</p>
           </div>
 
-          {/* Editor do dia selecionado */}
           {selDay && (
             <div className="card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
                 <h3 style={{ fontSize: "1.1rem", margin: 0 }}>{selDay} de {MONTHS[curMonth]} de {curYear}</h3>
                 <div style={{ fontSize: "0.8rem", color: "#888" }}>
-                  {selectedIsOverride ? "Customizado" : "Ciclo padrão"} · {saving && <span style={{ color: "var(--egbe-green)" }}>Salvando...</span>}
+                  {selectedIsOverride ? "Customizado" : "Sem customização"} {saving && <span style={{ color: "var(--egbe-green)" }}>· Salvando...</span>}
                 </div>
               </div>
 
               <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666", marginBottom: "0.5rem", display: "block" }}>
-                Selecione os Òrìṣà que regem este dia
+                Òrìṣà que regem este dia
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "0.5rem" }}>
                 {ALL_ORIXAS.map(({ name, color }) => {
                   const active = selectedOrixas.includes(name);
                   return (
-                    <label key={name} style={{
-                      display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem",
-                      background: active ? color + "15" : "white",
-                      border: `1.5px solid ${active ? color : "#e5e7eb"}`,
-                      borderRadius: "8px", cursor: "pointer", userSelect: "none",
-                    }}>
-                      <span style={{
-                        width: "18px", height: "18px", borderRadius: "50%",
-                        border: `2px solid ${color}`, background: active ? color : "white",
-                        display: "inline-flex", alignItems: "center", justifyContent: "center",
-                        flexShrink: 0,
-                      }}>
+                    <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", background: active ? color + "15" : "white", border: `1.5px solid ${active ? color : "#e5e7eb"}`, borderRadius: "8px", cursor: "pointer" }}>
+                      <span style={{ width: "18px", height: "18px", borderRadius: "50%", border: `2px solid ${color}`, background: active ? color : "white", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
                       </span>
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={() => {
-                          const next = active ? selectedOrixas.filter((o) => o !== name) : [...selectedOrixas, name];
-                          setOrixasForDay(curYear, curMonth, selDay, next);
-                        }}
-                        style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
-                      />
-                      <span style={{ fontSize: "0.85rem", color: active ? color : "#444", fontWeight: active ? 600 : 500 }}>
-                        {name}
-                      </span>
+                      <input type="checkbox" checked={active} onChange={() => {
+                        const next = active ? selectedOrixas.filter((o) => o !== name) : [...selectedOrixas, name];
+                        setOrixasForDay(curYear, curMonth, selDay, next);
+                      }} style={{ position: "absolute", opacity: 0, pointerEvents: "none" }} />
+                      <span style={{ fontSize: "0.85rem", color: active ? color : "#444", fontWeight: active ? 600 : 500 }}>{name}</span>
                     </label>
                   );
                 })}
               </div>
               {selectedIsOverride && (
                 <button onClick={resetDay} className="btn btn-secondary" style={{ marginTop: "1rem", fontSize: "0.82rem", padding: "0.4rem 0.9rem" }}>
-                  Voltar ao ciclo padrão deste dia
+                  Remover customização deste dia
                 </button>
               )}
             </div>
