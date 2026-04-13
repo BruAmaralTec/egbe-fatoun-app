@@ -31,9 +31,7 @@ export default function FOseAdmin() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const [curYear, setCurYear] = useState(new Date().getFullYear());
-  const [curMonth, setCurMonth] = useState(new Date().getMonth());
-  const [selDay, setSelDay] = useState(null);
+  const curYear = new Date().getFullYear();
 
   const [resetStart, setResetStart] = useState("");
   const [resetEnd, setResetEnd] = useState("");
@@ -123,19 +121,6 @@ export default function FOseAdmin() {
     updateCycle(id, "orixas", next);
   }
 
-  function getOrixasForDay(y, m, d) {
-    const key = dayKey(y, m, d);
-    if (dayOverrides[key]?.orixas) return dayOverrides[key].orixas;
-    return [];
-  }
-
-  async function setOrixasForDay(y, m, d, orixas) {
-    const key = dayKey(y, m, d);
-    const updated = { ...dayOverrides, [key]: { orixas } };
-    setDayOverrides(updated);
-    await persistOverrides(updated);
-  }
-
   async function resetKeys(keys, scopeLabel = "esse período") {
     if (keys.length === 0) {
       alert(`Nenhuma customização para resetar em ${scopeLabel}.`);
@@ -149,19 +134,6 @@ export default function FOseAdmin() {
     alert(`${keys.length} dia(s) resetado(s).`);
   }
 
-  async function resetDay() {
-    if (!selDay) { alert("Selecione um dia no calendário primeiro."); return; }
-    const key = dayKey(curYear, curMonth, selDay);
-    if (!dayOverrides[key]) { alert("Este dia não tem customização."); return; }
-    await resetKeys([key], `${selDay} de ${MONTHS[curMonth]}`);
-  }
-  async function resetMonth() {
-    const keys = Object.keys(dayOverrides).filter((k) => {
-      const [y, m] = k.split("-").map(Number);
-      return y === curYear && m === curMonth;
-    });
-    await resetKeys(keys, `${MONTHS[curMonth]} de ${curYear}`);
-  }
   async function resetYear() {
     const keys = Object.keys(dayOverrides).filter((k) => {
       const [y] = k.split("-").map(Number);
@@ -275,21 +247,6 @@ export default function FOseAdmin() {
   if (!isConselho) return null;
   if (loading) return <p style={{ color: "#888" }}>Carregando...</p>;
 
-  const firstDay = new Date(curYear, curMonth, 1);
-  let startDow = firstDay.getDay();
-  startDow = startDow === 0 ? 6 : startDow - 1;
-  const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-
-  const selectedOrixas = selDay ? getOrixasForDay(curYear, curMonth, selDay) : [];
-  const selectedIsOverride = selDay && !!dayOverrides[dayKey(curYear, curMonth, selDay)];
-
-  function changeMonth(dir) {
-    let m = curMonth + dir, y = curYear;
-    if (m > 11) { m = 0; y++; }
-    if (m < 0) { m = 11; y--; }
-    setCurMonth(m); setCurYear(y); setSelDay(null);
-  }
-
   return (
     <div>
       <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Gestão do Calendário de Ọ̀sẹ̀</h1>
@@ -301,7 +258,6 @@ export default function FOseAdmin() {
         {[
           { id: "cycles", label: "Ciclos de Ọ̀sẹ̀" },
           { id: "orixas", label: "Òrìṣà" },
-          { id: "period", label: "Gerar Calendário" },
         ].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} className={`btn ${tab === t.id ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.85rem" }}>
             {t.label}
@@ -383,6 +339,22 @@ export default function FOseAdmin() {
             </p>
           </div>
 
+          {/* Resets */}
+          <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+              <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#666", marginRight: "0.25rem" }}>🔄 Resetar calendário:</span>
+              <button onClick={resetYear} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Ano {curYear}</button>
+              <span style={{ color: "#ccc", margin: "0 0.25rem" }}>|</span>
+              <input type="date" value={resetStart} onChange={(e) => setResetStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
+              <span style={{ fontSize: "0.8rem", color: "#888" }}>até</span>
+              <input type="date" value={resetEnd} onChange={(e) => setResetEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
+              <button onClick={resetPeriod} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Período</button>
+            </div>
+            <p style={{ fontSize: "0.72rem", color: "#888", marginTop: "0.5rem" }}>
+              Apaga os dias gerados no escopo escolhido. Útil antes de gerar novamente com ciclos diferentes.
+            </p>
+          </div>
+
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <p style={{ fontSize: "0.82rem", color: "#888" }}>
               Cada ciclo agrupa vários Òrìṣà sob um nome e se repete a cada X dias a partir da data inicial.
@@ -443,102 +415,6 @@ export default function FOseAdmin() {
         </div>
       )}
 
-      {/* TAB: Gerar Calendário (visualização + resets + edição por dia) */}
-      {tab === "period" && (
-        <div>
-          <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-              <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#666", marginRight: "0.25rem" }}>Resetar:</span>
-              <button onClick={resetDay} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Dia selecionado</button>
-              <button onClick={resetMonth} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>{MONTHS[curMonth]} inteiro</button>
-              <button onClick={resetYear} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Ano {curYear}</button>
-              <span style={{ color: "#ccc", margin: "0 0.25rem" }}>|</span>
-              <input type="date" value={resetStart} onChange={(e) => setResetStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
-              <span style={{ fontSize: "0.8rem", color: "#888" }}>até</span>
-              <input type="date" value={resetEnd} onChange={(e) => setResetEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
-              <button onClick={resetPeriod} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Período</button>
-            </div>
-            <p style={{ fontSize: "0.72rem", color: "#888", marginTop: "0.5rem" }}>Reset apaga customizações no(s) dia(s).</p>
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <button onClick={() => changeMonth(-1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem" }}>←</button>
-            <h3 style={{ fontSize: "1.2rem", margin: 0 }}>{MONTHS[curMonth]} {curYear}</h3>
-            <button onClick={() => changeMonth(1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem" }}>→</button>
-          </div>
-
-          <div className="card" style={{ marginBottom: "1.5rem" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", marginBottom: "4px" }}>
-              {["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map((d) => (
-                <div key={d} style={{ textAlign: "center", fontSize: "0.75rem", fontWeight: 600, color: "#888", padding: "0.4rem" }}>{d}</div>
-              ))}
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px" }}>
-              {Array.from({ length: startDow }).map((_, i) => <div key={`e${i}`} />)}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const d = i + 1;
-                const key = dayKey(curYear, curMonth, d);
-                const orixas = getOrixasForDay(curYear, curMonth, d);
-                const isCustom = !!dayOverrides[key];
-                const isSel = selDay === d;
-                const mainColor = orixas[0] ? ORIXA_COLOR[orixas[0]] : "#ccc";
-                return (
-                  <div key={d} onClick={() => setSelDay(d)} style={{
-                    padding: "0.5rem 0.25rem", borderRadius: "8px", cursor: "pointer", textAlign: "center",
-                    background: isSel ? mainColor : "transparent",
-                    border: isCustom && !isSel ? `2px dashed ${mainColor}` : "2px solid transparent",
-                    transition: "all 0.15s",
-                  }}>
-                    <div style={{ fontSize: "0.85rem", fontWeight: 600, color: isSel ? "white" : "#333" }}>{d}</div>
-                    <div style={{ display: "flex", gap: "2px", justifyContent: "center", marginTop: "2px", flexWrap: "wrap", maxWidth: "60px", marginLeft: "auto", marginRight: "auto" }}>
-                      {orixas.map((ox) => (
-                        <div key={ox} style={{ width: "6px", height: "6px", borderRadius: "50%", background: isSel ? "rgba(255,255,255,0.85)" : (ORIXA_COLOR[ox] || "#888") }} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {selDay && (
-            <div className="card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-                <h3 style={{ fontSize: "1.1rem", margin: 0 }}>{selDay} de {MONTHS[curMonth]} de {curYear}</h3>
-                <div style={{ fontSize: "0.8rem", color: "#888" }}>
-                  {selectedIsOverride ? "Customizado" : "Sem customização"} {saving && <span style={{ color: "var(--egbe-green)" }}>· Salvando...</span>}
-                </div>
-              </div>
-
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666", marginBottom: "0.5rem", display: "block" }}>
-                Òrìṣà que regem este dia
-              </label>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "0.5rem" }}>
-                {orixas.map(({ name, color }) => {
-                  const active = selectedOrixas.includes(name);
-                  return (
-                    <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", background: active ? color + "15" : "white", border: `1.5px solid ${active ? color : "#e5e7eb"}`, borderRadius: "8px", cursor: "pointer" }}>
-                      <span style={{ width: "18px", height: "18px", borderRadius: "50%", border: `2px solid ${color}`, background: active ? color : "white", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
-                      </span>
-                      <input type="checkbox" checked={active} onChange={() => {
-                        const next = active ? selectedOrixas.filter((o) => o !== name) : [...selectedOrixas, name];
-                        setOrixasForDay(curYear, curMonth, selDay, next);
-                      }} style={{ position: "absolute", opacity: 0, pointerEvents: "none" }} />
-                      <span style={{ fontSize: "0.85rem", color: active ? color : "#444", fontWeight: active ? 600 : 500 }}>{name}</span>
-                    </label>
-                  );
-                })}
-              </div>
-              {selectedIsOverride && (
-                <button onClick={resetDay} className="btn btn-secondary" style={{ marginTop: "1rem", fontSize: "0.82rem", padding: "0.4rem 0.9rem" }}>
-                  Remover customização deste dia
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
