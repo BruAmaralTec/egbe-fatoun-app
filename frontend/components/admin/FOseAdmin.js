@@ -22,7 +22,7 @@ function dayKey(y, m, d) { return `${y}-${m}-${d}`; }
 export default function FOseAdmin() {
   const { profile, isConselho } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState("defaults");
+  const [tab, setTab] = useState("cycles");
   const [defaults, setDefaults] = useState({});
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
   const [orixas, setOrixas] = useState(DEFAULT_ORIXAS);
@@ -136,29 +136,38 @@ export default function FOseAdmin() {
     await persistOverrides(updated);
   }
 
-  async function resetKeys(keys) {
-    if (keys.length === 0) return;
-    if (!confirm(`Resetar ${keys.length} dia(s)?`)) return;
+  async function resetKeys(keys, scopeLabel = "esse período") {
+    if (keys.length === 0) {
+      alert(`Nenhuma customização para resetar em ${scopeLabel}.`);
+      return;
+    }
+    if (!confirm(`Resetar ${keys.length} dia(s) customizado(s)?`)) return;
     const updated = { ...dayOverrides };
     keys.forEach((k) => { delete updated[k]; });
     setDayOverrides(updated);
     await persistOverrides(updated);
+    alert(`${keys.length} dia(s) resetado(s).`);
   }
 
-  async function resetDay() { if (selDay) await resetKeys([dayKey(curYear, curMonth, selDay)]); }
+  async function resetDay() {
+    if (!selDay) { alert("Selecione um dia no calendário primeiro."); return; }
+    const key = dayKey(curYear, curMonth, selDay);
+    if (!dayOverrides[key]) { alert("Este dia não tem customização."); return; }
+    await resetKeys([key], `${selDay} de ${MONTHS[curMonth]}`);
+  }
   async function resetMonth() {
     const keys = Object.keys(dayOverrides).filter((k) => {
       const [y, m] = k.split("-").map(Number);
       return y === curYear && m === curMonth;
     });
-    await resetKeys(keys);
+    await resetKeys(keys, `${MONTHS[curMonth]} de ${curYear}`);
   }
   async function resetYear() {
     const keys = Object.keys(dayOverrides).filter((k) => {
       const [y] = k.split("-").map(Number);
       return y === curYear;
     });
-    await resetKeys(keys);
+    await resetKeys(keys, `o ano de ${curYear}`);
   }
   async function resetPeriod() {
     if (!resetStart || !resetEnd) { alert("Selecione as duas datas."); return; }
@@ -170,7 +179,7 @@ export default function FOseAdmin() {
       const t = new Date(y, m, d).getTime();
       return t >= start && t <= end;
     });
-    await resetKeys(keys);
+    await resetKeys(keys, `o período selecionado`);
   }
 
   async function generateCalendar() {
@@ -290,10 +299,9 @@ export default function FOseAdmin() {
 
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         {[
-          { id: "orixas", label: "Òrìṣà" },
-          { id: "defaults", label: "Conteúdo por Òrìṣà" },
           { id: "cycles", label: "Ciclos de Ọ̀sẹ̀" },
-          { id: "period", label: "Configuração do Período" },
+          { id: "orixas", label: "Òrìṣà" },
+          { id: "period", label: "Gerar Calendário" },
         ].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} className={`btn ${tab === t.id ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.85rem" }}>
             {t.label}
@@ -301,75 +309,57 @@ export default function FOseAdmin() {
         ))}
       </div>
 
-      {/* TAB: Òrìṣà — CRUD */}
+      {/* TAB: Òrìṣà — CRUD unificado (metadados + conteúdo) */}
       {tab === "orixas" && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
             <p style={{ fontSize: "0.82rem", color: "#888", margin: 0 }}>
-              Adicione, edite ou remova Òrìṣà do sistema. Alterações refletem em ciclos, conteúdos e calendário.
+              Cada card tem os dados do Òrìṣà (nome, cores) e seu conteúdo padrão (oração, áudio e link) aplicado a todos os dias regidos por ele.
             </p>
-            <button onClick={addOrixa} className="btn btn-primary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>
-              + Novo Òrìṣà
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button onClick={addOrixa} className="btn btn-secondary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>+ Novo Òrìṣà</button>
+              <button onClick={saveDefaults} className="btn btn-primary" disabled={saving} style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>
+                {saving ? "Salvando..." : saved ? "✓ Salvo!" : "Salvar conteúdos"}
+              </button>
+            </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "0.75rem" }}>
-            {orixas.map((ox, i) => (
-              <div key={i} className="card" style={{ borderLeft: `4px solid ${ox.color}`, padding: "0.85rem 1rem" }}>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: "0.72rem", color: "#888" }}>Nome</label>
-                    <input className="input-field" value={ox.name} onChange={(e) => updateOrixa(i, "name", e.target.value)} style={{ padding: "0.4rem 0.6rem", fontSize: "0.88rem", fontWeight: 600, color: ox.color }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: "0.72rem", color: "#888", display: "block" }}>Cor</label>
-                    <input type="color" value={ox.color} onChange={(e) => updateOrixa(i, "color", e.target.value)} style={{ width: "40px", height: "36px", padding: 0, border: "1px solid #e5e7eb", borderRadius: "6px", cursor: "pointer" }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: "0.72rem", color: "#888", display: "block" }}>Fundo</label>
-                    <input type="color" value={ox.bg} onChange={(e) => updateOrixa(i, "bg", e.target.value)} style={{ width: "40px", height: "36px", padding: 0, border: "1px solid #e5e7eb", borderRadius: "6px", cursor: "pointer" }} />
-                  </div>
-                  <button onClick={() => removeOrixa(i)} title="Remover Òrìṣà" style={{ padding: "0.4rem 0.7rem", background: "none", border: "1.5px solid #fecaca", borderRadius: "6px", color: "var(--egbe-red)", cursor: "pointer", fontSize: "0.85rem", height: "36px" }}>✕</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB: Conteúdo por Òrìṣà */}
-      {tab === "defaults" && (
-        <div>
-          <p style={{ fontSize: "0.82rem", color: "#888", marginBottom: "1rem" }}>
-            Os conteúdos aqui aparecem em todos os dias regidos pelo respectivo Òrìṣà.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1rem" }}>
-            {orixas.map(({ name, color }) => {
-              const data = defaults[name] || {};
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "1rem" }}>
+            {orixas.map((ox, i) => {
+              const data = defaults[ox.name] || {};
               return (
-                <div key={name} className="card" style={{ borderTop: `4px solid ${color}` }}>
-                  <h3 style={{ color, fontSize: "1.1rem", marginBottom: "0.75rem" }}>{name}</h3>
+                <div key={i} className="card" style={{ borderTop: `4px solid ${ox.color}` }}>
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end", marginBottom: "1rem" }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: "0.72rem", color: "#888" }}>Nome</label>
+                      <input className="input-field" value={ox.name} onChange={(e) => updateOrixa(i, "name", e.target.value)} style={{ padding: "0.4rem 0.6rem", fontSize: "1rem", fontWeight: 600, color: ox.color }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.72rem", color: "#888", display: "block" }}>Cor</label>
+                      <input type="color" value={ox.color} onChange={(e) => updateOrixa(i, "color", e.target.value)} style={{ width: "36px", height: "34px", padding: 0, border: "1px solid #e5e7eb", borderRadius: "6px", cursor: "pointer" }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.72rem", color: "#888", display: "block" }}>Fundo</label>
+                      <input type="color" value={ox.bg} onChange={(e) => updateOrixa(i, "bg", e.target.value)} style={{ width: "36px", height: "34px", padding: 0, border: "1px solid #e5e7eb", borderRadius: "6px", cursor: "pointer" }} />
+                    </div>
+                    <button onClick={() => removeOrixa(i)} title="Remover Òrìṣà" style={{ padding: "0.4rem 0.6rem", background: "none", border: "1.5px solid #fecaca", borderRadius: "6px", color: "var(--egbe-red)", cursor: "pointer", fontSize: "0.85rem", height: "34px" }}>✕</button>
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
                     <div>
                       <label className="label">Oração padrão</label>
-                      <FRichTextEditor value={data.text || ""} onChange={(html) => updateDefault(name, "text", html)} placeholder={`Ẹ káàárọ̀ ${name}...`} minHeight="140px" />
+                      <FRichTextEditor value={data.text || ""} onChange={(html) => updateDefault(ox.name, "text", html)} placeholder={`Ẹ káàárọ̀ ${ox.name}...`} minHeight="140px" />
                     </div>
                     <div>
                       <label className="label">Áudio (URL)</label>
-                      <input className="input-field" type="url" value={data.audio || ""} onChange={(e) => updateDefault(name, "audio", e.target.value)} placeholder="https://drive.google.com/..." />
+                      <input className="input-field" type="url" value={data.audio || ""} onChange={(e) => updateDefault(ox.name, "audio", e.target.value)} placeholder="https://drive.google.com/..." />
                     </div>
                     <div>
                       <label className="label">Link</label>
-                      <input className="input-field" type="url" value={data.link || ""} onChange={(e) => updateDefault(name, "link", e.target.value)} placeholder="https://..." />
+                      <input className="input-field" type="url" value={data.link || ""} onChange={(e) => updateDefault(ox.name, "link", e.target.value)} placeholder="https://..." />
                     </div>
                   </div>
                 </div>
               );
             })}
-          </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1.5rem" }}>
-            <button onClick={saveDefaults} className="btn btn-primary" disabled={saving}>
-              {saving ? "Salvando..." : saved ? "✓ Salvo!" : "Salvar padrões"}
-            </button>
           </div>
         </div>
       )}
@@ -377,6 +367,22 @@ export default function FOseAdmin() {
       {/* TAB: Ciclos de Ọ̀sẹ̀ */}
       {tab === "cycles" && (
         <div>
+          {/* Gerar calendário */}
+          <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem", background: "#f0f7f3", border: "1px solid #d1fae5" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--egbe-green-dark)" }}>🗓️ Gerar calendário:</span>
+              <input type="date" value={genStart} onChange={(e) => setGenStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
+              <span style={{ fontSize: "0.8rem", color: "#666" }}>até</span>
+              <input type="date" value={genEnd} onChange={(e) => setGenEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
+              <button onClick={generateCalendar} disabled={generating} className="btn btn-primary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>
+                {generating ? "Gerando..." : "Gerar calendário"}
+              </button>
+            </div>
+            <p style={{ fontSize: "0.72rem", color: "#666", marginTop: "0.5rem" }}>
+              Aplica os ciclos abaixo ao período escolhido. Sobrescreve customizações existentes.
+            </p>
+          </div>
+
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <p style={{ fontSize: "0.82rem", color: "#888" }}>
               Cada ciclo agrupa vários Òrìṣà sob um nome e se repete a cada X dias a partir da data inicial.
@@ -437,28 +443,13 @@ export default function FOseAdmin() {
         </div>
       )}
 
-      {/* TAB: Configuração do Período */}
+      {/* TAB: Gerar Calendário (visualização + resets + edição por dia) */}
       {tab === "period" && (
         <div>
-          <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem", background: "#f0f7f3", border: "1px solid #d1fae5" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--egbe-green-dark)" }}>🗓️ Gerar calendário:</span>
-              <input type="date" value={genStart} onChange={(e) => setGenStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
-              <span style={{ fontSize: "0.8rem", color: "#666" }}>até</span>
-              <input type="date" value={genEnd} onChange={(e) => setGenEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "160px", fontSize: "0.8rem" }} />
-              <button onClick={generateCalendar} disabled={generating} className="btn btn-primary" style={{ fontSize: "0.82rem", padding: "0.4rem 1rem" }}>
-                {generating ? "Gerando..." : "Gerar calendário"}
-              </button>
-            </div>
-            <p style={{ fontSize: "0.72rem", color: "#666", marginTop: "0.5rem" }}>
-              Usa os ciclos configurados na aba "Ciclos de Ọ̀sẹ̀" para preencher o período. Sobrescreve customizações existentes.
-            </p>
-          </div>
-
           <div className="card" style={{ marginBottom: "1rem", padding: "0.85rem 1rem" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
               <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#666", marginRight: "0.25rem" }}>Resetar:</span>
-              <button onClick={resetDay} disabled={!selDay} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem", opacity: selDay ? 1 : 0.5 }}>Dia selecionado</button>
+              <button onClick={resetDay} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Dia selecionado</button>
               <button onClick={resetMonth} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>{MONTHS[curMonth]} inteiro</button>
               <button onClick={resetYear} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.35rem 0.8rem" }}>Ano {curYear}</button>
               <span style={{ color: "#ccc", margin: "0 0.25rem" }}>|</span>
