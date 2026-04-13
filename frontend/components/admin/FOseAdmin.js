@@ -254,7 +254,7 @@ export default function FOseAdmin() {
         Configure conteúdos por Òrìṣà, monte ciclos de Ọ̀sẹ̀ e gere o calendário do período.
       </p>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
         {[
           { id: "cycles", label: "Ciclos de Ọ̀sẹ̀" },
           { id: "orixas", label: "Òrìṣà" },
@@ -263,6 +263,15 @@ export default function FOseAdmin() {
             {t.label}
           </button>
         ))}
+        <a
+          href="/dashboard/ose"
+          target="_blank"
+          rel="noreferrer"
+          className="btn btn-secondary"
+          style={{ fontSize: "0.85rem", textDecoration: "none", marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+        >
+          📅 Visualizar calendário ↗
+        </a>
       </div>
 
       {/* TAB: Òrìṣà — CRUD unificado (metadados + conteúdo) */}
