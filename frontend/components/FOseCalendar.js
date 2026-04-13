@@ -195,7 +195,7 @@ export default function FOseCalendar() {
                   </p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    {data.text && <p style={{ fontSize: "0.88rem", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{data.text}</p>}
+                    {data.text && <div className="rich-editor-content" style={{ fontSize: "0.88rem", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: data.text }} />}
                     {data.audio && (
                       <div>
                         <audio controls src={data.audio} style={{ width: "100%", maxWidth: "400px" }}>Seu navegador não suporta áudio.</audio>

@@ -13,6 +13,7 @@ import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy 
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { db } from "@/lib/LFirebase";
+import FRichTextEditor from "@/components/FRichTextEditor";
 
 import { ROLES } from "@/lib/LPermissions";
 
@@ -233,7 +234,10 @@ export default function FUsuariosAdmin() {
                 </div>
               )}
             </div>
-            <div style={{ marginBottom: "1.5rem" }}><label className="label">Observações</label><textarea className="input-field" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} placeholder="Notas internas..." style={{ resize: "vertical" }} /></div>
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label className="label">Observações</label>
+              <FRichTextEditor value={form.observacoes} onChange={(html) => setForm({ ...form, observacoes: html })} placeholder="Notas internas sobre o usuário..." minHeight="120px" />
+            </div>
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
               <button onClick={() => setEditing(null)} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem" }}>Cancelar</button>
               <button onClick={handleSave} className="btn btn-primary" disabled={saving} style={{ padding: "0.6rem 1.25rem" }}>{saving ? "Salvando..." : "Salvar alterações"}</button>

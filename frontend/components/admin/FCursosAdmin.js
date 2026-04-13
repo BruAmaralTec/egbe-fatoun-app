@@ -126,8 +126,14 @@ export default function FCursosAdmin() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Título</label><input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex: Introdução ao Corpus de Ifá" /></div>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Subtítulo</label><input className="input-field" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder="Ex: Fundamentos para iniciantes" /></div>
-              <div style={{ gridColumn: "1 / -1" }}><label className="label">Descrição para Divulgação</label><textarea className="input-field" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Texto curto usado em cards e compartilhamento" style={{ resize: "vertical" }} /></div>
-              <div style={{ gridColumn: "1 / -1" }}><label className="label">Objetivo do Curso</label><textarea className="input-field" rows={3} value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} placeholder="O que o aluno vai aprender / competências desenvolvidas" style={{ resize: "vertical" }} /></div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label className="label">Descrição para Divulgação</label>
+                <FRichTextEditor value={form.description} onChange={(html) => setForm({ ...form, description: html })} placeholder="Texto usado em cards e compartilhamento" minHeight="100px" />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label className="label">Objetivo do Curso</label>
+                <FRichTextEditor value={form.objective} onChange={(html) => setForm({ ...form, objective: html })} placeholder="O que o aluno vai aprender / competências desenvolvidas" minHeight="120px" />
+              </div>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Sacerdotisa(e)</label><input className="input-field" value={form.sacerdotisa} onChange={(e) => setForm({ ...form, sacerdotisa: e.target.value })} placeholder="Nome da Sacerdotisa ou Sacerdote" /></div>
               <div><label className="label">Valor (R$)</label><input className="input-field" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} /></div>
               <div><label className="label">Vagas (0 = ilimitado)</label><input className="input-field" type="number" min="0" value={form.maxStudents} onChange={(e) => setForm({ ...form, maxStudents: parseInt(e.target.value) || 0 })} /></div>

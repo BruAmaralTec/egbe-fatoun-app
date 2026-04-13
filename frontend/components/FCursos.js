@@ -83,11 +83,14 @@ export default function FCursos() {
                     👨‍🏫 {course.instructor}
                   </p>
                 )}
-                {course.description && (
-                  <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.75rem", flex: 1 }}>
-                    {course.description.length > 150 ? course.description.slice(0, 150) + "..." : course.description}
-                  </p>
-                )}
+                {course.description && (() => {
+                  const plain = course.description.replace(/<[^>]*>/g, "").trim();
+                  return plain ? (
+                    <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.75rem", flex: 1 }}>
+                      {plain.length > 150 ? plain.slice(0, 150) + "..." : plain}
+                    </p>
+                  ) : null;
+                })()}
                 <div style={{ fontSize: "0.82rem", color: "#888", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                   {course.startDate && <span>📅 Início: {course.startDate}</span>}
                   {course.schedule && <span>🕐 {course.schedule}</span>}

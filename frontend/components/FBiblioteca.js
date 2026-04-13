@@ -13,6 +13,7 @@ import {
   collection, getDocs, addDoc, deleteDoc, doc, query, orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
+import FRichTextEditor from "@/components/FRichTextEditor";
 
 const FILE_TYPES = [
   { value: "pdf", label: "PDF", icon: "📄", color: "#B22222", bg: "#fde8e8" },
@@ -122,7 +123,7 @@ export default function FBiblioteca() {
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label className="label">Descrição (opcional)</label>
-              <textarea className="input-field" rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ resize: "vertical" }} />
+              <FRichTextEditor value={form.description} onChange={(html) => setForm({ ...form, description: html })} placeholder="Breve descrição do material..." minHeight="100px" />
             </div>
           </div>
           <button className="btn btn-primary" onClick={handleAdd} disabled={saving}>

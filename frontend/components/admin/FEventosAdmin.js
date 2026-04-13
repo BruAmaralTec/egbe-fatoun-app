@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { notifyAll } from "@/lib/LNotifications";
+import FRichTextEditor from "@/components/FRichTextEditor";
 
 const EMPTY_EVENT = {
   title: "", description: "", date: "", endDate: "", location: "",
@@ -144,7 +145,7 @@ export default function FEventosAdmin() {
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <label className="label">Descrição</label>
-                <textarea className="input-field" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={{ resize: "vertical" }} />
+                <FRichTextEditor value={form.description} onChange={(html) => setForm({ ...form, description: html })} placeholder="Detalhes do evento, programação, informações importantes..." minHeight="140px" />
               </div>
               <div>
                 <label className="label">Data início</label>

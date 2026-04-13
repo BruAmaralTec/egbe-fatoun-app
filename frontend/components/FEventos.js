@@ -78,11 +78,14 @@ export default function FEventos() {
                 )}
               </div>
               <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>{event.title}</h3>
-              {event.description && (
-                <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.75rem", flex: 1 }}>
-                  {event.description.length > 150 ? event.description.slice(0, 150) + "..." : event.description}
-                </p>
-              )}
+              {event.description && (() => {
+                const plain = event.description.replace(/<[^>]*>/g, "").trim();
+                return plain ? (
+                  <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.75rem", flex: 1 }}>
+                    {plain.length > 150 ? plain.slice(0, 150) + "..." : plain}
+                  </p>
+                ) : null;
+              })()}
               <div style={{ fontSize: "0.82rem", color: "#888", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                 {event.date && <span>📅 {event.date}</span>}
                 {event.location && <span>📍 {event.location}</span>}

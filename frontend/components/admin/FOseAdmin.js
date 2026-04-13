@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/LAuthContext";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
+import FRichTextEditor from "@/components/FRichTextEditor";
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
@@ -202,7 +203,7 @@ export default function FOseAdmin() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
                     <div>
                       <label className="label">Oração padrão</label>
-                      <textarea className="input-field" rows={4} value={data.text || ""} onChange={(e) => updateDefault(name, "text", e.target.value)} placeholder={`Ẹ káàárọ̀ ${name}...`} style={{ resize: "vertical" }} />
+                      <FRichTextEditor value={data.text || ""} onChange={(html) => updateDefault(name, "text", html)} placeholder={`Ẹ káàárọ̀ ${name}...`} minHeight="140px" />
                     </div>
                     <div>
                       <label className="label">Áudio (URL)</label>
