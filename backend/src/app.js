@@ -13,6 +13,7 @@ const customersRoutes = require("./routes/BCustomers");
 const paymentsRoutes = require("./routes/BPayments");
 const webhooksRoutes = require("./routes/BWebhooks");
 const usersRoutes = require("./routes/BUsers");
+const autentiqueRoutes = require("./routes/BAutentique");
 
 const app = express();
 
@@ -32,8 +33,8 @@ app.use(
   })
 );
 
-// Parse JSON no body dos requests
-app.use(express.json());
+// Parse JSON no body dos requests (limite maior pra PDFs em base64)
+app.use(express.json({ limit: "10mb" }));
 
 // ----------------------------------------
 // ROTAS
@@ -54,6 +55,7 @@ app.use("/api/customers", customersRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/webhooks", webhooksRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/autentique", autentiqueRoutes);
 
 // 404 — rota não encontrada
 app.use((req, res) => {
