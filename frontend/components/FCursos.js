@@ -16,6 +16,24 @@ const STATUS_LABELS = {
   finished: { label: "Finalizado", color: "#6366f1", bg: "#e0e7ff" },
 };
 
+function formatDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function agendaSummary(days = []) {
+  const filled = days.filter((d) => d.date);
+  if (filled.length === 0) return null;
+  if (filled.length === 1) {
+    const d = filled[0];
+    const time = d.startTime ? ` às ${d.startTime}` : "";
+    return `${formatDate(d.date)}${time}`;
+  }
+  const sorted = [...filled].sort((a, b) => a.date.localeCompare(b.date));
+  return `${filled.length} encontros · 1º em ${formatDate(sorted[0].date)}`;
+}
+
 export default function FCursos() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +42,7 @@ export default function FCursos() {
   useEffect(() => {
     async function load() {
       try {
-        const q = query(collection(db, "courses"), orderBy("startDate", "desc"));
+        const q = query(collection(db, "courses"), orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
         const data = snap.docs
           .map((d) => ({ id: d.id, ...d.data() }))
@@ -65,9 +83,11 @@ export default function FCursos() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
           {filtered.map((course) => {
             const st = STATUS_LABELS[course.status];
+            const agenda = agendaSummary(course.days);
+            const plain = course.description ? course.description.replace(/<[^>]*>/g, "").trim() : "";
             return (
               <div key={course.id} className="card" style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem", gap: "0.5rem" }}>
                   {st && (
                     <span style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem", borderRadius: "4px", background: st.bg, color: st.color, fontWeight: 500 }}>
                       {st.label}
@@ -77,23 +97,31 @@ export default function FCursos() {
                     <span style={{ fontSize: "0.75rem", color: "#888" }}>📜 Certificado</span>
                   )}
                 </div>
-                <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>{course.title}</h3>
-                {course.instructor && (
-                  <p style={{ fontSize: "0.82rem", color: "var(--egbe-green-dark)", marginBottom: "0.25rem", fontWeight: 500 }}>
-                    👨‍🏫 {course.instructor}
+
+                <h3 style={{ fontSize: "1.1rem", marginBottom: course.subtitle ? "0.15rem" : "0.5rem" }}>{course.title}</h3>
+                {course.subtitle && (
+                  <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.5rem", fontStyle: "italic" }}>
+                    {course.subtitle}
                   </p>
                 )}
-                {course.description && (() => {
-                  const plain = course.description.replace(/<[^>]*>/g, "").trim();
-                  return plain ? (
-                    <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.75rem", flex: 1 }}>
-                      {plain.length > 150 ? plain.slice(0, 150) + "..." : plain}
-                    </p>
-                  ) : null;
-                })()}
+
+                {course.sacerdotisa && (
+                  <p style={{ fontSize: "0.82rem", color: "var(--egbe-green-dark)", marginBottom: "0.5rem", fontWeight: 500 }}>
+                    🙏 Com {course.sacerdotisa}
+                  </p>
+                )}
+
+                {plain && (
+                  <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.75rem", flex: 1 }}>
+                    {plain.length > 150 ? plain.slice(0, 150) + "..." : plain}
+                  </p>
+                )}
+
                 <div style={{ fontSize: "0.82rem", color: "#888", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                  {course.startDate && <span>📅 Início: {course.startDate}</span>}
-                  {course.schedule && <span>🕐 {course.schedule}</span>}
+                  {agenda && <span>📅 {agenda}</span>}
+                  {(course.modules?.length || 0) > 0 && (
+                    <span>📚 {course.modules.length} módulo{course.modules.length > 1 ? "s" : ""}</span>
+                  )}
                   {course.price > 0 ? (
                     <span>💰 R$ {Number(course.price).toFixed(2)}</span>
                   ) : (
