@@ -1,0 +1,30 @@
+name: Deploy Backend to Cloud Run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: egbe-fatoun-app
+          workload_identity_provider: projects/307666226706/locations/global/workloadIdentityPools/github/providers/egbe-fatoun-repo
+          service_account: firebase-adminsdk-fbsvc@egbe-fatoun-app.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: gcloud run deploy egbe-payments --source backend --region southamerica-east1 --allow-unauthenticated --project egbe-fatoun-app
