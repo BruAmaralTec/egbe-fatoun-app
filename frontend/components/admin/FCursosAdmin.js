@@ -123,7 +123,7 @@ export default function FCursosAdmin() {
         {/* TAB: Detalhes */}
         {tab === "details" && (
           <div className="card" style={{ maxWidth: "700px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Título</label><input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex: Introdução ao Corpus de Ifá" /></div>
               <div style={{ gridColumn: "1 / -1" }}><label className="label">Subtítulo</label><input className="input-field" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder="Ex: Fundamentos para iniciantes" /></div>
               <div style={{ gridColumn: "1 / -1" }}>
@@ -204,7 +204,7 @@ export default function FCursosAdmin() {
 
             <div style={{ padding: "1rem", background: "#fef2f2", borderRadius: "8px", border: "1px solid #fecaca", marginBottom: "1rem" }}>
               <h4 style={{ fontSize: "0.95rem", marginBottom: "0.5rem", color: "#dc2626" }}>YouTube — Gravação</h4>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
                 <div><label className="label">ID do vídeo</label><input className="input-field" value={form.youtubeVideoId} onChange={(e) => setForm({ ...form, youtubeVideoId: e.target.value })} placeholder="dQw4w9WgXcQ" /></div>
                 <div><label className="label">ID da playlist</label><input className="input-field" value={form.youtubePlaylistId} onChange={(e) => setForm({ ...form, youtubePlaylistId: e.target.value })} placeholder="PL..." /></div>
               </div>
@@ -293,7 +293,7 @@ export default function FCursosAdmin() {
             </div>
             {form.certificateEnabled && (
               <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
                   <div><label className="label">Carga horária</label><input className="input-field" type="number" min="0" value={form.certificateHours} onChange={(e) => setForm({ ...form, certificateHours: parseInt(e.target.value) || 0 })} /></div>
                   <div><label className="label">Template</label><select className="input-field" value={form.certificateTemplate} onChange={(e) => setForm({ ...form, certificateTemplate: e.target.value })}><option value="default">Padrão Ẹgbẹ́</option><option value="formal">Formal</option><option value="minimal">Minimalista</option></select></div>
                 </div>
@@ -312,7 +312,7 @@ export default function FCursosAdmin() {
                     {" "}para assinatura digital. A chave API é configurada na tela de Integrações.
                   </p>
                   {form.autentiqueEnabled && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.75rem" }}>
                       <div>
                         <label className="label">ID da pasta (Autentique)</label>
                         <input className="input-field" value={form.autentiqueFolderId} onChange={(e) => setForm({ ...form, autentiqueFolderId: e.target.value })} placeholder="Opcional — pasta onde salvar" />

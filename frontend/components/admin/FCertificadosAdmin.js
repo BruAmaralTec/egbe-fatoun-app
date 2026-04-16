@@ -61,7 +61,7 @@ export default function FCertificadosAdmin() {
       <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Certificados</h1>
       <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem" }}>Gere certificados de conclusão para os cursos</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem" }}>
         {/* Formulário */}
         <div className="card">
           <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Gerar novo certificado</h3>
@@ -69,7 +69,7 @@ export default function FCertificadosAdmin() {
             <div><label className="label">Nome do aluno</label><input className="input-field" value={form.studentName} onChange={e => setForm({ ...form, studentName: e.target.value })} placeholder="Nome completo" /></div>
             <div><label className="label">Orúkọ (opcional)</label><input className="input-field" value={form.oruko} onChange={e => setForm({ ...form, oruko: e.target.value })} placeholder="Nome de iniciação" /></div>
             <div><label className="label">Nome do curso</label><input className="input-field" value={form.courseName} onChange={e => setForm({ ...form, courseName: e.target.value })} placeholder="Ex: Fundamentos do Ifá" /></div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.75rem" }}>
               <div><label className="label">Carga horária</label><input className="input-field" type="number" value={form.hours} onChange={e => setForm({ ...form, hours: parseInt(e.target.value) || 0 })} /></div>
               <div><label className="label">Data de conclusão</label><input className="input-field" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
             </div>

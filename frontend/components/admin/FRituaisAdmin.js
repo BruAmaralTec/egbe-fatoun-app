@@ -148,7 +148,7 @@ export default function FRituaisAdmin() {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         {/* Lista de compra */}
         <div className="card">
           <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>🛒 Lista de Compra</h3>
@@ -192,7 +192,7 @@ export default function FRituaisAdmin() {
       </div>
 
       {/* Extras e WhatsApp */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
         <div className="card">
           <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Acréscimos extras</h3>
           <textarea className="input-field" rows={3} value={extras} onChange={e => setExtras(e.target.value)} placeholder="Materiais adicionais..." style={{ resize: "vertical" }} />

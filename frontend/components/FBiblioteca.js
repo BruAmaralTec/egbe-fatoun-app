@@ -91,7 +91,7 @@ export default function FBiblioteca() {
       {showAdd && isAdmin && (
         <div className="card" style={{ marginBottom: "1.5rem", maxWidth: "700px" }}>
           <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Novo material</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
             <div style={{ gridColumn: "1 / -1" }}>
               <label className="label">Título</label>
               <input className="input-field" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Ex: Oríkì de Ọ̀ṣun" />

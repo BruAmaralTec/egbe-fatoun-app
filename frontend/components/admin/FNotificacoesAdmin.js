@@ -135,7 +135,7 @@ export default function FNotificacoesAdmin() {
           {target === "roles" && (
             <div style={{ marginBottom: "0.75rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
               <p style={{ fontSize: "0.78rem", color: "#666", marginBottom: "0.5rem" }}>Selecione os perfis:</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.4rem" }}>
                 {ROLES.map((r) => (
                   <label key={r.value} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
                     <input type="checkbox" checked={selectedRoles.includes(r.value)} onChange={(e) => {

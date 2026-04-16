@@ -138,7 +138,7 @@ export default function FEventosAdmin() {
         {/* TAB: Detalhes */}
         {tab === "details" && (
           <div className="card" style={{ maxWidth: "700px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
               <div style={{ gridColumn: "1 / -1" }}>
                 <label className="label">Título do evento</label>
                 <input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex: Odún Ọ̀ṣun 2026" />

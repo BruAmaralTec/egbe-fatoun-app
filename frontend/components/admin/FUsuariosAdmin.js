@@ -203,7 +203,7 @@ export default function FUsuariosAdmin() {
         >
           <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", padding: "2rem" }}>
             <h2 style={{ fontSize: "1.3rem", marginBottom: "1.5rem" }}>Editar Usuário</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
               <div><label className="label">Nome completo</label><input className="input-field" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} /></div>
               <div><label className="label">Chamado na comunidade</label><input className="input-field" value={form.communityName} onChange={(e) => setForm({ ...form, communityName: e.target.value })} placeholder="Apelido na comunidade" /></div>
               <div><label className="label">Email</label><input className="input-field" value={form.email} disabled style={{ opacity: 0.6 }} /></div>
@@ -235,7 +235,7 @@ export default function FUsuariosAdmin() {
               )) : <p style={{ color: "#ccc", fontSize: "0.85rem", fontStyle: "italic" }}>Nenhuma iniciação registrada.</p>}
               {addingIniciacao && (
                 <div style={{ marginTop: "0.75rem", padding: "1rem", background: "#eff6ff", borderRadius: "8px", border: "1px solid #bfdbfe" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
                     <div>
                       <label className="label">Tipo de iniciação</label>
                       <select className="input-field" value={novaIniciacao.tipo} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, tipo: e.target.value })}>
@@ -273,7 +273,7 @@ export default function FUsuariosAdmin() {
               )) : <p style={{ color: "#ccc", fontSize: "0.85rem", fontStyle: "italic" }}>Nenhum cargo registrado.</p>}
               {addingCargo && (
                 <div style={{ marginTop: "0.75rem", padding: "1rem", background: "#fffbeb", borderRadius: "8px", border: "1px solid #fde68a" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
                     <div><label className="label">Nome do cargo</label><input className="input-field" value={novoCargo.nome} onChange={(e) => setNovoCargo({ ...novoCargo, nome: e.target.value })} placeholder="Ex: Ìyálọ́rìṣà, Bàbálòrìṣà, Ẹlẹ́ẹ̀gun..." /></div>
                     <div><label className="label">Data</label><input className="input-field" type="date" value={novoCargo.data} onChange={(e) => setNovoCargo({ ...novoCargo, data: e.target.value })} /></div>
                   </div>
