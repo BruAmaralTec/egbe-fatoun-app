@@ -62,4 +62,13 @@ export async function createPaymentLink(data) {
   return res.data;
 }
 
+// ----------------------------------------
+// USUÁRIOS (admin)
+// ----------------------------------------
+
+export async function deleteUser(uid) {
+  const res = await api.delete(`/api/users/${uid}`);
+  return res.data;
+}
+
 export default api;

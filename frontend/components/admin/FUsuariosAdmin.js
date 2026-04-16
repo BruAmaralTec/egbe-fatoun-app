@@ -9,10 +9,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, setDoc, query, orderBy } from "firebase/firestore";
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { db } from "@/lib/LFirebase";
+import { deleteUser as apiDeleteUser } from "@/lib/LApi";
 import FRichTextEditor from "@/components/FRichTextEditor";
 
 import { ROLES } from "@/lib/LPermissions";
@@ -122,9 +123,13 @@ export default function FUsuariosAdmin() {
   }
 
   async function handleDelete(userId) {
-    if (!confirm("Tem certeza que deseja remover este usuário?")) return;
-    await deleteDoc(doc(db, "users", userId));
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    if (!confirm("Tem certeza que deseja remover este usuário? Esta ação remove também o login (Firebase Auth).")) return;
+    try {
+      await apiDeleteUser(userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (err) {
+      alert("Erro ao remover usuário: " + (err.response?.data?.error || err.message));
+    }
   }
 
   const filtered = users.filter((u) => {

@@ -12,6 +12,7 @@ const config = require("./config/BConfig");
 const customersRoutes = require("./routes/BCustomers");
 const paymentsRoutes = require("./routes/BPayments");
 const webhooksRoutes = require("./routes/BWebhooks");
+const usersRoutes = require("./routes/BUsers");
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.get("/health", (req, res) => {
 app.use("/api/customers", customersRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/webhooks", webhooksRoutes);
+app.use("/api/users", usersRoutes);
 
 // 404 — rota não encontrada
 app.use((req, res) => {
