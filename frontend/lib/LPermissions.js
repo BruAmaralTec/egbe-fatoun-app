@@ -36,9 +36,9 @@ export const ALL_AREAS = [
   { key: "admin-financeiro", label: "Financeiro", href: "/dashboard/admin/financeiro", icon: "💰", group: "Gestão" },
 
   // Sistema (só técnico por padrão)
-  { key: "admin-integracoes", label: "Integrações", href: "/dashboard/admin/integracoes", icon: "🔗", group: "Sistema" },
   { key: "admin-configuracoes", label: "Configurações", href: "/dashboard/admin/configuracoes", icon: "⚙️", group: "Sistema" },
-  { key: "admin-deploy", label: "Deploy & Config", href: "/dashboard/admin/deploy", icon: "🚀", group: "Sistema" },
+  { key: "admin-integracoes", label: "Integrações", href: "/dashboard/admin/integracoes", icon: "🔗", group: "Sistema" },
+  { key: "admin-deploy", label: "Deploy", href: "/dashboard/admin/deploy", icon: "🚀", group: "Sistema" },
 ];
 
 // Defaults usados na primeira carga (antes de configurar no Firestore)
