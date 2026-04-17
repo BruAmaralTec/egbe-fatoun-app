@@ -11,7 +11,7 @@ export const FIXED_AREAS = [
 
 // Início só para sacerdotisa e técnico
 export const ADMIN_ONLY_AREAS = [
-  { key: "inicio", label: "Início", href: "/dashboard", icon: "🏠" },
+  { key: "inicio", label: "Painel Adm", href: "/dashboard", icon: "📊" },
 ];
 
 // Todas as áreas configuráveis do sistema
