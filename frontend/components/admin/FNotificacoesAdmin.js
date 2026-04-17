@@ -48,10 +48,12 @@ export default function FNotificacoesAdmin() {
     async function load() {
       try {
         const [usersSnap, notifsSnap] = await Promise.all([
-          getDocs(query(collection(db, "users"), orderBy("displayName"))),
-          getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(100))),
+          getDocs(collection(db, "users")).catch(() => ({ docs: [] })),
+          getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(100))).catch(() => ({ docs: [] })),
         ]);
-        setUsers(usersSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        const usrs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        usrs.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
+        setUsers(usrs);
 
         // Agrupa notificações por título+mensagem+createdAt arredondado pro minuto
         const notifs = notifsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));

@@ -160,14 +160,18 @@ export default function FRituaisAdmin() {
     if (!isConselho) return;
     async function load() {
       const [eventsSnap, usersSnap] = await Promise.all([
-        getDocs(query(collection(db, "rituals"), orderBy("date", "desc"))),
-        getDocs(collection(db, "users")),
+        getDocs(collection(db, "rituals")).catch(() => ({ docs: [] })),
+        getDocs(collection(db, "users")).catch(() => ({ docs: [] })),
       ]);
-      setEvents(eventsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setUsers(usersSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const evts = eventsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      evts.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      setEvents(evts);
+      const usrs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      usrs.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
+      setUsers(usrs);
       setLoading(false);
     }
-    load().catch((e) => { console.error(e); setLoading(false); });
+    load();
   }, [isConselho]);
 
   if (!isConselho) return <p>Acesso restrito ao Conselho e Administradores.</p>;

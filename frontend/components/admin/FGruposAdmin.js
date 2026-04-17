@@ -54,14 +54,16 @@ export default function FGruposAdmin() {
     if (!isConselho) return;
     async function load() {
       const [gs, us] = await Promise.all([
-        getDocs(collection(db, "groups")),
-        getDocs(collection(db, "users")),
+        getDocs(collection(db, "groups")).catch(() => ({ docs: [] })),
+        getDocs(collection(db, "users")).catch(() => ({ docs: [] })),
       ]);
       setGroups(gs.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setUsers(us.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const usrs = us.docs.map((d) => ({ id: d.id, ...d.data() }));
+      usrs.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
+      setUsers(usrs);
       setLoading(false);
     }
-    load().catch((e) => { console.error(e); setLoading(false); });
+    load();
   }, [isConselho]);
 
   if (!isConselho) return <p>Acesso restrito ao Conselho e Administradores.</p>;

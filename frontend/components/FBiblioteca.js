@@ -76,20 +76,20 @@ export default function FBiblioteca() {
 
   useEffect(() => {
     async function load() {
-      const q = query(collection(db, "library"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
+      const snap = await getDocs(collection(db, "library")).catch(() => ({ docs: [] }));
       setItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     }
     load();
   }, []);
 
-  // Admin só: carrega lista de usuários pra seleção
   useEffect(() => {
     if (!isAdmin) return;
     async function loadUsers() {
-      const snap = await getDocs(collection(db, "users"));
-      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const snap = await getDocs(collection(db, "users")).catch(() => ({ docs: [] }));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
+      setUsers(list);
     }
     loadUsers();
   }, [isAdmin]);

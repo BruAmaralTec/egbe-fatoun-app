@@ -32,8 +32,10 @@ export default function FMembros() {
   useEffect(() => {
     if (!isConselho) return;
     async function load() {
-      const snap = await getDocs(collection(db, "users"));
-      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const snap = await getDocs(collection(db, "users")).catch(() => ({ docs: [] }));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
+      setUsers(list);
       setLoading(false);
     }
     load();
