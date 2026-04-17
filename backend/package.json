@@ -8,6 +8,7 @@
     "dev": "nodemon src/app.js"
   },
   "dependencies": {
+    "@google-cloud/translate": "^8.5.1",
     "axios": "^1.7.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
