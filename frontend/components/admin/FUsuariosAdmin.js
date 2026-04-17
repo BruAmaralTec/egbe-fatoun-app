@@ -40,9 +40,10 @@ export default function FUsuariosAdmin() {
 
   useEffect(() => {
     async function load() {
-      const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const snap = await getDocs(collection(db, "users"));
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
+      setUsers(list);
       setLoading(false);
     }
     load();
@@ -133,7 +134,8 @@ export default function FUsuariosAdmin() {
   }
 
   const filtered = users.filter((u) => {
-    const matchSearch = !search || u.displayName?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase()) || u.cpf?.includes(search) || u.oruko?.toLowerCase().includes(search.toLowerCase());
+    const s = search.toLowerCase();
+    const matchSearch = !search || u.displayName?.toLowerCase().includes(s) || u.communityName?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s) || u.cpf?.includes(search) || u.oruko?.toLowerCase().includes(s);
     const matchRole = filterRole === "all" || u.role === filterRole;
     return matchSearch && matchRole;
   });
