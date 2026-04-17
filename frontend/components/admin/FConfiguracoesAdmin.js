@@ -1,25 +1,19 @@
 // ========================================
 // components/admin/FConfiguracoesAdmin.js
 // [F = Frontend Component]
-// Configurações do sistema — permissões,
-// notificações, segurança
+// Configurações do sistema — Permissões (real) + Notificações + Segurança
 // ========================================
 
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/LAuthContext";
 
-const PERFIS = [
-  { role: "sacerdote", label: "Sacerdotisa", level: "Super-adm", color: "#D4A017", access: "Acesso total · Todos os módulos · Financeiro · Rituais · Integrações" },
-  { role: "tecnico", label: "Técnico", level: "Super-adm", color: "#3b82f6", access: "Integrações · Biblioteca · Sem financeiro · Sem rituais privados" },
-  { role: "conselho", label: "Conselho", level: "Admin", color: "#6366f1", access: "Eventos · Cursos · Membros · Relatórios · Financeiro" },
-  { role: "filho", label: "Filho(a) da Casa", level: "Configurável", color: "#22c55e", access: "Eventos · Cursos · Biblioteca · Osè · Pagamentos" },
-  { role: "cliente", label: "Cliente", level: "Configurável", color: "#9ca3af", access: "Eventos públicos · Cursos · Pagamentos" },
-];
+const FPermissoesAdmin = dynamic(() => import("@/components/admin/FPermissoesAdmin"), { ssr: false });
 
 const NOTIFICATION_TYPES = [
-  { id: "ritual", label: "Rituais e Osè", desc: "Próximos rituais e lembretes de Osè" },
+  { id: "ritual", label: "Rituais e Ọ̀sẹ̀", desc: "Próximos rituais e lembretes de Ọ̀sẹ̀" },
   { id: "payment", label: "Pagamentos", desc: "Confirmações e cobranças vencidas" },
   { id: "event", label: "Eventos", desc: "Novos eventos e inscrições" },
   { id: "course", label: "Cursos", desc: "Novos cursos e certificados" },
@@ -40,8 +34,7 @@ export default function FConfiguracoesAdmin() {
       <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Configurações</h1>
       <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem" }}>Permissões · Notificações · Segurança</p>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         {[
           { id: "permissions", label: "Permissões" },
           { id: "notifications", label: "Notificações" },
@@ -52,26 +45,13 @@ export default function FConfiguracoesAdmin() {
             borderColor: tab === t.id ? "var(--egbe-green)" : "#e5e7eb",
             background: tab === t.id ? "var(--egbe-green)" : "white",
             color: tab === t.id ? "white" : "#666", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
+            fontFamily: "inherit",
           }}>{t.label}</button>
         ))}
       </div>
 
-      {/* Permissões */}
-      {tab === "permissions" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {PERFIS.map(p => (
-            <div key={p.role} className="card" style={{ borderLeft: `4px solid ${p.color}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-                <span style={{ fontWeight: 600, fontSize: "0.95rem", color: p.color }}>{p.label}</span>
-                <span className={`badge badge-${p.role}`}>{p.level}</span>
-              </div>
-              <p style={{ fontSize: "0.82rem", color: "#666" }}>{p.access}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      {tab === "permissions" && <FPermissoesAdmin embedded />}
 
-      {/* Notificações */}
       {tab === "notifications" && (
         <div className="card">
           <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Tipos de notificação</h3>
@@ -100,7 +80,6 @@ export default function FConfiguracoesAdmin() {
         </div>
       )}
 
-      {/* Segurança */}
       {tab === "security" && (
         <div className="card">
           <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Segurança do Sistema</h3>

@@ -14,7 +14,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { ALL_AREAS, DEFAULT_PERMISSIONS, ROLES } from "@/lib/LPermissions";
 
-export default function FPermissoesAdmin() {
+export default function FPermissoesAdmin({ embedded = false }) {
   const { profile } = useAuth();
   const router = useRouter();
   const [permissions, setPermissions] = useState(null);
@@ -23,10 +23,11 @@ export default function FPermissoesAdmin() {
   const [saved, setSaved] = useState(false);
 
   const isTecnico = profile?.role === "tecnico";
+  const isAdmin = isTecnico || profile?.role === "sacerdote";
 
   useEffect(() => {
-    if (profile && !isTecnico) router.push("/dashboard");
-  }, [profile, isTecnico, router]);
+    if (!embedded && profile && !isTecnico) router.push("/dashboard");
+  }, [embedded, profile, isTecnico, router]);
 
   useEffect(() => {
     async function load() {
@@ -89,7 +90,7 @@ export default function FPermissoesAdmin() {
     }
   }
 
-  if (!isTecnico) return null;
+  if (!isAdmin) return null;
   if (loading) return <p style={{ color: "#888" }}>Carregando permissões...</p>;
 
   const groups = [...new Set(ALL_AREAS.map((a) => a.group))];
@@ -98,10 +99,12 @@ export default function FPermissoesAdmin() {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Permissões por Perfil</h1>
-          <p style={{ color: "#666", fontSize: "0.9rem" }}>Configure quais áreas cada perfil pode acessar</p>
-        </div>
+        {!embedded && (
+          <div>
+            <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Permissões por Perfil</h1>
+            <p style={{ color: "#666", fontSize: "0.9rem" }}>Configure quais áreas cada perfil pode acessar</p>
+          </div>
+        )}
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <button onClick={resetDefaults} className="btn btn-secondary" style={{ fontSize: "0.82rem", padding: "0.5rem 1rem" }}>
             Restaurar padrões
