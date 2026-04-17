@@ -130,7 +130,7 @@ export default function FOseCalendar() {
     <div>
       <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Calendário de Ọ̀sẹ̀</h1>
       <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-        Calendário litúrgico — clique num dia para ver os Òrìṣà que regem e suas orações.
+        Calendário — clique num dia para ver os Òrìṣà que regem e suas orações.
       </p>
 
       {/* Card do dia de hoje (padrão no topo) */}
