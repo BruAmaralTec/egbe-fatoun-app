@@ -28,6 +28,7 @@ const EVENT_TYPES = [
   { value: "festival", label: "Festival / Odún" },
   { value: "encontro", label: "Encontro" },
   { value: "ritual", label: "Ritual" },
+  { value: "mutirao", label: "Mutirão" },
   { value: "palestra", label: "Palestra" },
   { value: "workshop", label: "Workshop" },
 ];

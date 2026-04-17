@@ -42,12 +42,15 @@ export const ALL_AREAS = [
 ];
 
 // Defaults usados na primeira carga (antes de configurar no Firestore)
+// Comunidade é igual pra todos os perfis
+const COMUNIDADE = ["ose", "eventos", "cursos", "biblioteca", "dicionario", "pagamentos", "notificacoes"];
+
 export const DEFAULT_PERMISSIONS = {
-  cliente: ["eventos", "cursos", "ose"],
-  midias: ["eventos", "cursos", "ose", "admin-eventos", "admin-cursos"],
-  filho: ["eventos", "cursos", "ose", "biblioteca", "dicionario", "pagamentos", "notificacoes"],
-  conselho: ["eventos", "cursos", "ose", "biblioteca", "dicionario", "pagamentos", "notificacoes", "membros", "admin-eventos", "admin-cursos", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes"],
-  sacerdote: ["eventos", "cursos", "ose", "biblioteca", "dicionario", "pagamentos", "notificacoes", "membros", "admin-eventos", "admin-cursos", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes", "admin-financeiro"],
+  cliente: [...COMUNIDADE],
+  midias: [...COMUNIDADE, "admin-eventos", "admin-cursos"],
+  filho: [...COMUNIDADE],
+  conselho: [...COMUNIDADE, "membros", "admin-eventos", "admin-cursos", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes"],
+  sacerdote: [...COMUNIDADE, "membros", "admin-eventos", "admin-cursos", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes", "admin-financeiro", "admin-configuracoes"],
   tecnico: ALL_AREAS.map((a) => a.key),
 };
 
