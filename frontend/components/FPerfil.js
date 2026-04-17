@@ -10,6 +10,7 @@ import { useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { useAuth } from "@/lib/LAuthContext";
+import { ROLES } from "@/lib/LPermissions";
 
 export default function FPerfil() {
   const { user, profile, setProfile } = useAuth();
@@ -21,6 +22,7 @@ export default function FPerfil() {
 
   const initiacoes = profile.initiacoes || [];
   const cargos = profile.cargos || [];
+  const roleLabel = ROLES.find((r) => r.value === (profile.role || "cliente"))?.label || "Cliente";
 
   function startEditing() {
     setForm({
@@ -111,17 +113,19 @@ export default function FPerfil() {
                 <input style={fieldStyle} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
               </div>
               <div>
-                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Como é chamado na comunidade</label>
+                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Nome para Comunidade</label>
                 <input style={fieldStyle} value={form.communityName} onChange={(e) => setForm({ ...form, communityName: e.target.value })} placeholder="Apelido ou nome usado pela comunidade" />
                 <span style={{ fontSize: "0.72rem", color: "#aaa" }}>Este nome aparece na tela de início.</span>
               </div>
               <div>
-                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Telefone</label>
-                <input style={fieldStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(11) 99999-9999" />
+                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Orúkọ</label>
+                <input style={{ ...fieldStyle, background: "#f3f4f6", color: "#999" }} value={profile.oruko || ""} disabled />
+                <span style={{ fontSize: "0.75rem", color: "#aaa" }}>Gerenciado pelos administradores</span>
               </div>
               <div>
-                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>CPF</label>
-                <input style={fieldStyle} value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" />
+                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Perfil</label>
+                <input style={{ ...fieldStyle, background: "#f3f4f6", color: "#999" }} value={roleLabel} disabled />
+                <span style={{ fontSize: "0.75rem", color: "#aaa" }}>Gerenciado pelos administradores</span>
               </div>
               <div>
                 <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Email</label>
@@ -129,9 +133,12 @@ export default function FPerfil() {
                 <span style={{ fontSize: "0.75rem", color: "#aaa" }}>Email não pode ser alterado</span>
               </div>
               <div>
-                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Perfil</label>
-                <input style={{ ...fieldStyle, background: "#f3f4f6", color: "#999" }} value={profile.role || "cliente"} disabled />
-                <span style={{ fontSize: "0.75rem", color: "#aaa" }}>Gerenciado pelos administradores</span>
+                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>CPF</label>
+                <input style={fieldStyle} value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" />
+              </div>
+              <div>
+                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Telefone</label>
+                <input style={fieldStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(11) 99999-9999" />
               </div>
             </div>
           ) : (
@@ -139,14 +146,15 @@ export default function FPerfil() {
               <tbody>
                 {[
                   ["Nome", profile.displayName || "Não informado"],
-                  ["Chamado na comunidade", profile.communityName || "Não informado"],
+                  ["Nome para Comunidade", profile.communityName || "Não informado"],
+                  ["Orúkọ", profile.oruko || "Não informado"],
+                  ["Perfil", roleLabel],
                   ["Email", profile.email],
                   ["CPF", profile.cpf || "Não informado"],
                   ["Telefone", profile.phone || "Não informado"],
-                  ["Perfil", profile.role || "cliente"],
                 ].map(([label, value]) => (
                   <tr key={label} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    <td style={{ padding: "0.6rem 0", color: "#888", width: "120px" }}>{label}</td>
+                    <td style={{ padding: "0.6rem 0", color: "#888", width: "180px" }}>{label}</td>
                     <td style={{ padding: "0.6rem 0", fontWeight: 500 }}>{value}</td>
                   </tr>
                 ))}
