@@ -48,46 +48,44 @@ export default function FPermissoesAdmin({ embedded = false }) {
     load();
   }, []);
 
+  async function autoSave(newPermissions) {
+    setSaving(true);
+    try {
+      await setDoc(doc(db, "config", "permissions"), newPermissions);
+      setSaved(true);
+    } catch (err) {
+      console.error("Erro ao salvar permissões:", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function togglePermission(role, areaKey) {
     setPermissions((prev) => {
       const current = prev[role] || [];
       const updated = current.includes(areaKey)
         ? current.filter((k) => k !== areaKey)
         : [...current, areaKey];
-      return { ...prev, [role]: updated };
+      const next = { ...prev, [role]: updated };
+      autoSave(next);
+      return next;
     });
-    setSaved(false);
   }
 
   function selectAll(role) {
-    setPermissions((prev) => ({
-      ...prev,
-      [role]: ALL_AREAS.map((a) => a.key),
-    }));
-    setSaved(false);
+    setPermissions((prev) => {
+      const next = { ...prev, [role]: ALL_AREAS.map((a) => a.key) };
+      autoSave(next);
+      return next;
+    });
   }
 
   function clearAll(role) {
-    setPermissions((prev) => ({ ...prev, [role]: [] }));
-    setSaved(false);
-  }
-
-  function resetDefaults() {
-    setPermissions({ ...DEFAULT_PERMISSIONS });
-    setSaved(false);
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await setDoc(doc(db, "config", "permissions"), permissions);
-      setSaved(true);
-    } catch (err) {
-      console.error("Erro ao salvar permissões:", err);
-      alert("Erro ao salvar: " + err.message);
-    } finally {
-      setSaving(false);
-    }
+    setPermissions((prev) => {
+      const next = { ...prev, [role]: [] };
+      autoSave(next);
+      return next;
+    });
   }
 
   if (!isAdmin) return null;
@@ -105,11 +103,8 @@ export default function FPermissoesAdmin({ embedded = false }) {
             <p style={{ color: "#666", fontSize: "0.9rem" }}>Configure quais áreas cada perfil pode acessar</p>
           </div>
         )}
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button onClick={handleSave} className="btn btn-primary" disabled={saving} style={{ fontSize: "0.82rem", padding: "0.5rem 1rem" }}>
-            {saving ? "Salvando..." : saved ? "Salvo!" : "Salvar"}
-          </button>
-        </div>
+        {saving && <span style={{ fontSize: "0.78rem", color: "#888" }}>Salvando...</span>}
+        {!saving && saved && <span style={{ fontSize: "0.78rem", color: "var(--egbe-green)", fontWeight: 600 }}>✔ Salvo</span>}
       </div>
 
       <div style={{ overflowX: "auto" }}>
