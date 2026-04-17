@@ -50,7 +50,8 @@ export default function FDicionario() {
       const data = await translateApi({ text: sourceText, sourceLang: fromLang, targetLang: toLang });
       setTranslation(data.translation || "Sem tradução.");
     } catch (err) {
-      setTranslation("Erro ao traduzir: " + (err.response?.data?.error || err.message));
+      const detail = err.response?.data?.details || err.response?.data?.error || err.message;
+      setTranslation("Erro: " + detail);
     } finally {
       setTranslating(false);
     }
