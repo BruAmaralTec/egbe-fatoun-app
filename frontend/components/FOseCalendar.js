@@ -21,7 +21,7 @@ export default function FOseCalendar() {
   const [selDay, setSelDay] = useState(null);
   const [filters, setFilters] = useState([]);
   const [cycleFilters, setCycleFilters] = useState([]);
-  const [timeFilter, setTimeFilter] = useState("mes"); // hoje | semana | mes | periodo
+  const [timeFilter, setTimeFilter] = useState("mes");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [dayOverrides, setDayOverrides] = useState({});
@@ -54,7 +54,6 @@ export default function FOseCalendar() {
     d0.setHours(0, 0, 0, 0);
     if (timeFilter === "hoje") return d0.getTime() === t0.getTime();
     if (timeFilter === "semana") {
-      // semana atual (segunda a domingo)
       const day = t0.getDay() === 0 ? 6 : t0.getDay() - 1;
       const start = new Date(t0); start.setDate(t0.getDate() - day);
       const end = new Date(start); end.setDate(start.getDate() + 6);
@@ -66,7 +65,7 @@ export default function FOseCalendar() {
       const e = new Date(periodEnd + "T00:00:00");
       return d0 >= s && d0 <= e;
     }
-    return true; // mes: sem restrição extra (o grid já é do mês)
+    return true;
   }
 
   function getOrixasForDay(y, m, d) {
@@ -75,7 +74,6 @@ export default function FOseCalendar() {
     return [];
   }
 
-  // Encontra qual(is) ciclo(s) regem o dia (para mostrar o nome)
   function getCyclesForDay(y, m, d) {
     const t = new Date(y, m, d).getTime();
     return Object.values(cycles || {}).filter((c) => {
@@ -92,6 +90,14 @@ export default function FOseCalendar() {
   startDow = startDow === 0 ? 6 : startDow - 1;
   const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
   const today = new Date();
+
+  // Info do dia de hoje (sempre exibido no topo)
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth();
+  const todayD = today.getDate();
+  const todayOrixas = getOrixasForDay(todayY, todayM, todayD);
+  const todayCycles = getCyclesForDay(todayY, todayM, todayD);
+  const todayMainColor = todayOrixas[0] ? ORIXA_COLOR[todayOrixas[0]] : "var(--egbe-green)";
 
   const selectedDate = selDay ? new Date(curYear, curMonth, selDay) : null;
   const selectedOrixas = selDay ? getOrixasForDay(curYear, curMonth, selDay) : [];
@@ -115,86 +121,32 @@ export default function FOseCalendar() {
         Calendário litúrgico — clique num dia para ver os Òrìṣà que regem e suas orações.
       </p>
 
-      {/* Filtros multi-select */}
-      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Òrìṣà</span>
-          {filters.length > 0 && (
-            <button onClick={() => setFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
-              Limpar ({filters.length})
-            </button>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          {orixas.map(({ name, color }) => {
-            const active = filters.includes(name);
-            return (
-              <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
-                <span style={{
-                  width: "18px", height: "18px", borderRadius: "50%",
-                  border: `2px solid ${color}`,
-                  background: active ? color : "white",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={() => setFilters(active ? filters.filter((f) => f !== name) : [...filters, name])}
-                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
-                />
-                <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
-                  {name}
-                </span>
-              </label>
-            );
-          })}
-        </div>
+      {/* Card do dia de hoje (padrão no topo) */}
+      <div className="card" style={{ marginBottom: "1.25rem", borderLeft: `4px solid ${todayMainColor}` }}>
+        <h3 style={{ fontSize: "1.05rem", margin: 0 }}>
+          {todayD} de {MONTHS[todayM]} de {todayY}
+        </h3>
+        {todayCycles.length > 0 && (
+          <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.4rem" }}>
+            {todayCycles.map((c) => (
+              <span key={c.id} style={{ fontSize: "0.78rem", padding: "0.2rem 0.6rem", borderRadius: "12px", background: (c.color || "#6b7280") + "20", color: c.color || "#374151", fontWeight: 600 }}>
+                Ọ̀sẹ̀ {c.name}
+              </span>
+            ))}
+          </div>
+        )}
+        {todayOrixas.length > 0 ? (
+          <p style={{ color: "#555", fontSize: "0.9rem", marginTop: "0.5rem" }}>
+            {todayOrixas.join(" • ")}
+          </p>
+        ) : (
+          <p style={{ color: "#aaa", fontSize: "0.85rem", marginTop: "0.5rem", fontStyle: "italic" }}>
+            Nenhum Òrìṣà registrado para hoje.
+          </p>
+        )}
       </div>
 
-      {/* Filtro por Ciclo */}
-      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Ciclo</span>
-          {cycleFilters.length > 0 && (
-            <button onClick={() => setCycleFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
-              Limpar ({cycleFilters.length})
-            </button>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          {Object.values(cycles || {}).map((c) => {
-            const color = c.color || "#6b7280";
-            const active = cycleFilters.includes(c.id);
-            return (
-              <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
-                <span style={{
-                  width: "18px", height: "18px", borderRadius: "50%",
-                  border: `2px solid ${color}`,
-                  background: active ? color : "white",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={() => setCycleFilters(active ? cycleFilters.filter((f) => f !== c.id) : [...cycleFilters, c.id])}
-                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
-                />
-                <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
-                  {c.name}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Filtro de tempo */}
+      {/* Filtro de tempo — primeiro */}
       <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
         {[
           { id: "hoje", label: "Hoje" },
@@ -206,7 +158,6 @@ export default function FOseCalendar() {
             key={opt.id}
             onClick={() => {
               setTimeFilter(opt.id);
-              // Ao mudar pra hoje/semana, navega pro mês atual se necessário
               if (opt.id === "hoje" || opt.id === "semana") {
                 const now = new Date();
                 if (now.getMonth() !== curMonth || now.getFullYear() !== curYear) {
@@ -230,7 +181,7 @@ export default function FOseCalendar() {
         )}
       </div>
 
-      {/* Navegação */}
+      {/* Navegação do mês */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <button onClick={() => changeMonth(-1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}>←</button>
         <h2 style={{ fontSize: "1.2rem" }}>{MONTHS[curMonth]} {curYear}</h2>
@@ -278,9 +229,9 @@ export default function FOseCalendar() {
         </div>
       </div>
 
-      {/* Detalhe do dia */}
+      {/* Detalhe do dia selecionado */}
       {selectedDate && selectedOrixas.length > 0 && (
-        <div className="card" style={{ borderLeft: `4px solid ${selectedMainColor}` }}>
+        <div className="card" style={{ borderLeft: `4px solid ${selectedMainColor}`, marginBottom: "1.5rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
             <div>
               <h3 style={{ fontSize: "1.1rem", margin: 0 }}>{selDay} de {MONTHS[curMonth]} de {curYear}</h3>
@@ -331,6 +282,84 @@ export default function FOseCalendar() {
           )}
         </div>
       )}
+
+      {/* Filtros embaixo do calendário */}
+      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Òrìṣà</span>
+          {filters.length > 0 && (
+            <button onClick={() => setFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
+              Limpar ({filters.length})
+            </button>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          {orixas.map(({ name, color }) => {
+            const active = filters.includes(name);
+            return (
+              <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
+                <span style={{
+                  width: "18px", height: "18px", borderRadius: "50%",
+                  border: `2px solid ${color}`,
+                  background: active ? color : "white",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => setFilters(active ? filters.filter((f) => f !== name) : [...filters, name])}
+                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                />
+                <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
+                  {name}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Ciclo</span>
+          {cycleFilters.length > 0 && (
+            <button onClick={() => setCycleFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
+              Limpar ({cycleFilters.length})
+            </button>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          {Object.values(cycles || {}).map((c) => {
+            const color = c.color || "#6b7280";
+            const active = cycleFilters.includes(c.id);
+            return (
+              <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
+                <span style={{
+                  width: "18px", height: "18px", borderRadius: "50%",
+                  border: `2px solid ${color}`,
+                  background: active ? color : "white",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => setCycleFilters(active ? cycleFilters.filter((f) => f !== c.id) : [...cycleFilters, c.id])}
+                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                />
+                <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
+                  {c.name}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
