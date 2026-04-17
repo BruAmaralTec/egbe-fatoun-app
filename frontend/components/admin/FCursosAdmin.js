@@ -20,6 +20,7 @@ const EMPTY_COURSE = {
   title: "", subtitle: "", description: "", objective: "", sacerdotisa: "",
   days: [{ id: "1", date: "", startTime: "", endTime: "" }],
   price: 0, maxStudents: 0, status: "draft", visibility: "public",
+  paymentLink: "",
   symplaEventId: "", streamYardUrl: "", youtubeVideoId: "", youtubePlaylistId: "",
   recordingAvailable: false, recordingPublic: false,
   certificateEnabled: true, certificateHours: 0, certificateTemplate: "default",
@@ -190,9 +191,16 @@ export default function FCursosAdmin() {
           <div className="card" style={{ maxWidth: "700px" }}>
             <p style={{ color: "#666", fontSize: "0.88rem", marginBottom: "1.5rem" }}>Conecte este curso com os serviços externos. As chaves de API ficam na tela de Integrações.</p>
 
+            <div style={{ padding: "1rem", background: "#f0fdf4", borderRadius: "8px", border: "1px solid #bbf7d0", marginBottom: "1rem" }}>
+              <h4 style={{ fontSize: "0.95rem", marginBottom: "0.5rem", color: "#166534" }}>Link de inscrição / pagamento</h4>
+              <label className="label">URL que o aluno abre ao clicar em "Inscrever-se"</label>
+              <input className="input-field" value={form.paymentLink} onChange={(e) => setForm({ ...form, paymentLink: e.target.value })} placeholder="https://sympla.com.br/... ou link do Asaas/pagamento" />
+              <p style={{ fontSize: "0.75rem", color: "#888", marginTop: "0.25rem" }}>Se vazio, o botão de inscrição não aparece no curso.</p>
+            </div>
+
             <div style={{ padding: "1rem", background: "#fff7ed", borderRadius: "8px", border: "1px solid #fed7aa", marginBottom: "1rem" }}>
-              <h4 style={{ fontSize: "0.95rem", marginBottom: "0.5rem", color: "#c2410c" }}>Sympla — Inscrições</h4>
-              <label className="label">ID do evento na Sympla</label>
+              <h4 style={{ fontSize: "0.95rem", marginBottom: "0.5rem", color: "#c2410c" }}>Sympla — ID do evento</h4>
+              <label className="label">ID do evento na Sympla (apenas referência interna)</label>
               <input className="input-field" value={form.symplaEventId} onChange={(e) => setForm({ ...form, symplaEventId: e.target.value })} placeholder="ID numérico do evento" />
             </div>
 

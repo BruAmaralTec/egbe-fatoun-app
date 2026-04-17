@@ -131,6 +131,18 @@ export default function FCursos() {
                     <span>⏱️ {course.certificateHours}h de certificado</span>
                   )}
                 </div>
+
+                {course.paymentLink && course.status !== "finished" && (
+                  <a
+                    href={course.paymentLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    style={{ marginTop: "0.75rem", textAlign: "center", justifyContent: "center", textDecoration: "none" }}
+                  >
+                    Inscrever-se ↗
+                  </a>
+                )}
               </div>
             );
           })}
