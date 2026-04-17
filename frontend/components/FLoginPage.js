@@ -1,6 +1,6 @@
 // ========================================
 // app/login/page.js
-// Tela de login e cadastro
+// Tela de entrada — logo + boas-vindas + login
 // ========================================
 
 "use client";
@@ -8,7 +8,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/LAuthContext";
-import Link from "next/link";
 
 export default function FLoginPage() {
   const [isRegister, setIsRegister] = useState(false);
@@ -17,6 +16,7 @@ export default function FLoginPage() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const { loginWithEmail, loginWithGoogle, register } = useAuth();
   const router = useRouter();
@@ -32,7 +32,6 @@ export default function FLoginPage() {
       } else {
         await loginWithEmail(email, password);
       }
-      // Redireciona para o dashboard após login
       router.push("/dashboard");
     } catch (err) {
       const messages = {
@@ -67,132 +66,89 @@ export default function FLoginPage() {
       background: "linear-gradient(160deg, var(--egbe-black) 0%, var(--egbe-green-dark) 100%)",
       padding: "1.5rem",
     }}>
-      <div style={{
-        background: "white",
-        borderRadius: "16px",
-        padding: "2.5rem",
-        width: "100%",
-        maxWidth: "420px",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-      }}>
-        {/* Header */}
+      <div style={{ width: "100%", maxWidth: "420px" }}>
+        {/* Logo + boas-vindas */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <Link href="/" style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "1.5rem",
-            fontWeight: 700,
-            color: "var(--egbe-green)",
-            textDecoration: "none",
-          }}>
-            Ẹgbẹ́ Fátọ́ún
-          </Link>
-          <p style={{ color: "#888", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-            {isRegister ? "Crie sua conta" : "Acesse sua conta"}
+          {!logoFailed && (
+            <img
+              src="/logo.png"
+              alt="Ẹgbẹ́ Fátọ́ún"
+              onError={() => setLogoFailed(true)}
+              style={{ height: "120px", maxWidth: "100%", objectFit: "contain", marginBottom: "1rem" }}
+            />
+          )}
+          {logoFailed && (
+            <h1 style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "2rem",
+              color: "var(--egbe-yellow)",
+              marginBottom: "0.5rem",
+            }}>
+              Ẹgbẹ́ Fátọ́ún
+            </h1>
+          )}
+          <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1rem" }}>
+            Bem-vinda(o) à casa
           </p>
         </div>
 
-        {/* Formulário */}
-        <form onSubmit={handleSubmit}>
-          {isRegister && (
-            <div style={{ marginBottom: "1rem" }}>
-              <label className="label">Nome completo</label>
-              <input
-                className="input-field"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome completo"
-                required
-              />
-            </div>
-          )}
-
-          <div style={{ marginBottom: "1rem" }}>
-            <label className="label">Email</label>
-            <input
-              className="input-field"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label className="label">Senha</label>
-            <input
-              className="input-field"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
-              required
-              minLength={6}
-            />
-          </div>
-
-          {error && (
-            <div style={{
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: "8px",
-              padding: "0.75rem",
-              marginBottom: "1rem",
-              color: "var(--egbe-red)",
-              fontSize: "0.85rem",
-            }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading}
-            style={{ width: "100%", justifyContent: "center" }}
-          >
-            {loading ? "Aguarde..." : isRegister ? "Criar conta" : "Entrar"}
-          </button>
-        </form>
-
-        {/* Divisor */}
+        {/* Card de login */}
         <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem",
-          margin: "1.5rem 0",
+          background: "white",
+          borderRadius: "16px",
+          padding: "2rem",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
         }}>
-          <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }} />
-          <span style={{ color: "#9ca3af", fontSize: "0.8rem" }}>ou</span>
-          <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }} />
-        </div>
+          <p style={{ textAlign: "center", color: "#888", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+            {isRegister ? "Crie sua conta" : "Acesse sua conta"}
+          </p>
 
-        {/* Login com Google */}
-        <button
-          onClick={handleGoogle}
-          className="btn btn-secondary"
-          style={{ width: "100%", justifyContent: "center" }}
-        >
-          Entrar com Google
-        </button>
+          <form onSubmit={handleSubmit}>
+            {isRegister && (
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="label">Nome completo</label>
+                <input className="input-field" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome completo" required />
+              </div>
+            )}
 
-        {/* Toggle login/register */}
-        <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: "0.85rem", color: "#666" }}>
-          {isRegister ? "Já tem conta? " : "Não tem conta? "}
-          <button
-            onClick={() => { setIsRegister(!isRegister); setError(""); }}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--egbe-green)",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {isRegister ? "Faça login" : "Cadastre-se"}
+            <div style={{ marginBottom: "1rem" }}>
+              <label className="label">Email</label>
+              <input className="input-field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required />
+            </div>
+
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label className="label">Senha</label>
+              <input className="input-field" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" required minLength={6} />
+            </div>
+
+            {error && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "0.75rem", marginBottom: "1rem", color: "var(--egbe-red)", fontSize: "0.85rem" }}>
+                {error}
+              </div>
+            )}
+
+            <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
+              {loading ? "Aguarde..." : isRegister ? "Criar conta" : "Entrar"}
+            </button>
+          </form>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", margin: "1.5rem 0" }}>
+            <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }} />
+            <span style={{ color: "#9ca3af", fontSize: "0.8rem" }}>ou</span>
+            <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }} />
+          </div>
+
+          <button onClick={handleGoogle} className="btn btn-secondary" style={{ width: "100%", justifyContent: "center" }}>
+            Entrar com Google
           </button>
-        </p>
+
+          <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: "0.85rem", color: "#666" }}>
+            {isRegister ? "Já tem conta? " : "Não tem conta? "}
+            <button onClick={() => { setIsRegister(!isRegister); setError(""); }} style={{ background: "none", border: "none", color: "var(--egbe-green)", fontWeight: 600, cursor: "pointer" }}>
+              {isRegister ? "Faça login" : "Cadastre-se"}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );
