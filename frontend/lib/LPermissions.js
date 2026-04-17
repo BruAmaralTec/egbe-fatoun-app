@@ -18,12 +18,12 @@ export const ADMIN_ONLY_AREAS = [
 export const ALL_AREAS = [
   // Comunidade
   { key: "ose", label: "Calendário de Ọ̀sẹ̀", href: "/dashboard/ose", icon: "📿", group: "Comunidade" },
-  { key: "eventos", label: "Eventos", href: "/dashboard/eventos", icon: "🎉", group: "Comunidade" },
   { key: "cursos", label: "Cursos", href: "/dashboard/cursos", icon: "📚", group: "Comunidade" },
   { key: "biblioteca", label: "Biblioteca", href: "/dashboard/biblioteca", icon: "📖", group: "Comunidade" },
   { key: "dicionario", label: "Dicionário", href: "/dashboard/dicionario", icon: "🌐", group: "Comunidade" },
   { key: "pagamentos", label: "Pagamentos", href: "/dashboard/pagamentos", icon: "💳", group: "Comunidade" },
   { key: "notificacoes", label: "Notificações", href: "/dashboard/notificacoes", icon: "🔔", group: "Comunidade" },
+  { key: "eventos", label: "Eventos", href: "/dashboard/eventos", icon: "🎉", group: "Comunidade" },
 
   // Gestão
   { key: "membros", label: "Gestão de Usuários", href: "/dashboard/membros", icon: "👥", group: "Gestão" },
@@ -43,7 +43,7 @@ export const ALL_AREAS = [
 
 // Defaults usados na primeira carga (antes de configurar no Firestore)
 // Comunidade é igual pra todos os perfis
-const COMUNIDADE = ["ose", "eventos", "cursos", "biblioteca", "dicionario", "pagamentos", "notificacoes"];
+const COMUNIDADE = ["ose", "cursos", "biblioteca", "dicionario", "pagamentos", "notificacoes", "eventos"];
 
 export const DEFAULT_PERMISSIONS = {
   cliente: [...COMUNIDADE],
