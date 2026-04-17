@@ -106,9 +106,6 @@ export default function FPermissoesAdmin({ embedded = false }) {
           </div>
         )}
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button onClick={resetDefaults} className="btn btn-secondary" style={{ fontSize: "0.82rem", padding: "0.5rem 1rem" }}>
-            Restaurar padrões
-          </button>
           <button onClick={handleSave} className="btn btn-primary" disabled={saving} style={{ fontSize: "0.82rem", padding: "0.5rem 1rem" }}>
             {saving ? "Salvando..." : saved ? "Salvo!" : "Salvar"}
           </button>
