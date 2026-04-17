@@ -53,11 +53,10 @@ service cloud.firestore {
       allow delete: if isConselho();
     }
 
-    // Config do sistema: todos leem, só tecnico escreve
+    // Config do sistema: todos leem, admin (sacerdote+tecnico) escreve
     match /config/{docId} {
       allow read: if isAuth();
-      allow write: if isAuth() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tecnico";
+      allow write: if isAdmin();
     }
 
     // Settings (integrações, configurações sensíveis): só tecnico lê/escreve
