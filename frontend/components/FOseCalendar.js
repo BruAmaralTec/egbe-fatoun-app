@@ -244,6 +244,64 @@ export default function FOseCalendar() {
         </div>
       </div>
 
+      {/* Lista de dias que correspondem aos filtros */}
+      {(filters.length > 0 || cycleFilters.length > 0) && (() => {
+        const matchingDays = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(curYear, curMonth, d);
+          const dayOrixas = getOrixasForDay(curYear, curMonth, d);
+          const dayCycles = getCyclesForDay(curYear, curMonth, d);
+          const matchesOrixa = filters.length === 0 || dayOrixas.some((ox) => filters.includes(ox));
+          const matchesCycle = cycleFilters.length === 0 || dayCycles.some((c) => cycleFilters.includes(c.id));
+          const matchesTime = inTimeFilter(date);
+          if (matchesOrixa && matchesCycle && matchesTime && dayOrixas.length > 0) {
+            matchingDays.push({ d, dayOrixas, dayCycles });
+          }
+        }
+        if (matchingDays.length === 0) return (
+          <div className="card" style={{ marginBottom: "1.5rem", textAlign: "center", padding: "1.5rem", color: "#aaa" }}>
+            Nenhum dia encontrado com os filtros selecionados neste mês.
+          </div>
+        );
+        return (
+          <div className="card" style={{ marginBottom: "1.5rem" }}>
+            <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>
+              {matchingDays.length} dia(s) encontrado(s) em {MONTHS[curMonth]}
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {matchingDays.map(({ d, dayOrixas, dayCycles }) => {
+                const mainColor = dayOrixas[0] ? ORIXA_COLOR[dayOrixas[0]] : "#888";
+                return (
+                  <button
+                    key={d}
+                    onClick={() => setSelDay(d)}
+                    style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "0.6rem 0.9rem", background: selDay === d ? mainColor + "15" : "#f9fafb",
+                      borderRadius: "8px", border: `1px solid ${selDay === d ? mainColor : "#e5e7eb"}`,
+                      borderLeft: `4px solid ${mainColor}`, cursor: "pointer",
+                      fontFamily: "inherit", textAlign: "left", width: "100%",
+                    }}
+                  >
+                    <div>
+                      <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{d} de {MONTHS[curMonth]}</span>
+                      {dayCycles.length > 0 && (
+                        <span style={{ fontSize: "0.75rem", color: dayCycles[0].color || "#666", marginLeft: "0.5rem" }}>
+                          {dayCycles.map((c) => c.name).join(", ")}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: "0.82rem", color: "#555" }}>
+                      {dayOrixas.join(" • ")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Detalhe do dia selecionado */}
       {selectedDate && selectedOrixas.length > 0 && (
         <div className="card" style={{ borderLeft: `4px solid ${selectedMainColor}`, marginBottom: "1.5rem" }}>
