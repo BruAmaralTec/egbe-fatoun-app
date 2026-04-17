@@ -16,11 +16,15 @@ import { DEFAULT_ORIXAS } from "@/lib/LOse";
 import { pushSupported, pushPermission, registerDevice } from "@/lib/LPush";
 
 export default function FPerfil() {
-  const { user, profile, setProfile } = useAuth();
+  const { user, profile, setProfile, isAdmin } = useAuth();
   const { showAlert } = useModal();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({});
+  const [addingIniciacao, setAddingIniciacao] = useState(false);
+  const [novaIniciacao, setNovaIniciacao] = useState({ tipo: "orisa", nome: "", data: "", oruko: "" });
+  const [addingCargo, setAddingCargo] = useState(false);
+  const [novoCargo, setNovoCargo] = useState({ nome: "", data: "", descricao: "" });
   const [orixas, setOrixas] = useState(DEFAULT_ORIXAS);
   const [savingNotify, setSavingNotify] = useState(false);
   const [pushState, setPushState] = useState({ supported: false, permission: "default" });
@@ -84,21 +88,34 @@ export default function FPerfil() {
       communityName: profile.communityName || "",
       phone: profile.phone || "",
       cpf: profile.cpf || "",
+      oruko: profile.oruko || "",
+      role: profile.role || "cliente",
+      initiacoes: profile.initiacoes || [],
+      cargos: profile.cargos || [],
     });
     setEditing(true);
+    setAddingIniciacao(false);
+    setAddingCargo(false);
   }
 
   async function handleSave() {
     setSaving(true);
     try {
       const ref = doc(db, "users", user.uid);
-      await updateDoc(ref, {
+      const payload = {
         displayName: form.displayName,
         communityName: form.communityName,
         phone: form.phone,
         cpf: form.cpf,
-      });
-      setProfile((prev) => ({ ...prev, ...form }));
+      };
+      if (isAdmin) {
+        payload.oruko = form.oruko;
+        payload.role = form.role;
+        payload.initiacoes = form.initiacoes;
+        payload.cargos = form.cargos;
+      }
+      await updateDoc(ref, payload);
+      setProfile((prev) => ({ ...prev, ...payload }));
       setEditing(false);
     } catch (err) {
       console.error("Erro ao salvar perfil:", err);
@@ -106,6 +123,20 @@ export default function FPerfil() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function addIniciacao() {
+    if (!novaIniciacao.nome) return;
+    setForm({ ...form, initiacoes: [...form.initiacoes, { ...novaIniciacao, id: Date.now().toString() }] });
+    setNovaIniciacao({ tipo: "orisa", nome: "", data: "", oruko: "" });
+    setAddingIniciacao(false);
+  }
+
+  function addCargo() {
+    if (!novoCargo.nome) return;
+    setForm({ ...form, cargos: [...(form.cargos || []), { ...novoCargo, id: Date.now().toString() }] });
+    setNovoCargo({ nome: "", data: "", descricao: "" });
+    setAddingCargo(false);
   }
 
   const fieldStyle = {
@@ -173,13 +204,27 @@ export default function FPerfil() {
               </div>
               <div>
                 <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Orúkọ</label>
-                <input style={{ ...fieldStyle, background: "#f3f4f6", color: "#999" }} value={profile.oruko || ""} disabled />
-                <span style={{ fontSize: "0.75rem", color: "#aaa" }}>Gerenciado pelos administradores</span>
+                {isAdmin ? (
+                  <input style={fieldStyle} value={form.oruko} onChange={(e) => setForm({ ...form, oruko: e.target.value })} placeholder="Nome de iniciação" />
+                ) : (
+                  <>
+                    <input style={{ ...fieldStyle, background: "#f3f4f6", color: "#999" }} value={profile.oruko || ""} disabled />
+                    <span style={{ fontSize: "0.75rem", color: "#aaa" }}>Gerenciado pelos administradores</span>
+                  </>
+                )}
               </div>
               <div>
                 <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Perfil</label>
-                <input style={{ ...fieldStyle, background: "#f3f4f6", color: "#999" }} value={roleLabel} disabled />
-                <span style={{ fontSize: "0.75rem", color: "#aaa" }}>Gerenciado pelos administradores</span>
+                {isAdmin ? (
+                  <select style={fieldStyle} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                    {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                ) : (
+                  <>
+                    <input style={{ ...fieldStyle, background: "#f3f4f6", color: "#999" }} value={roleLabel} disabled />
+                    <span style={{ fontSize: "0.75rem", color: "#aaa" }}>Gerenciado pelos administradores</span>
+                  </>
+                )}
               </div>
               <div>
                 <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Email</label>
@@ -219,8 +264,13 @@ export default function FPerfil() {
 
         {/* Iniciações */}
         <div className="card">
-          <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Iniciações na casa</h3>
-          {initiacoes.length > 0 ? initiacoes.map((ini, i) => (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h3 style={{ fontSize: "1.05rem", margin: 0 }}>Iniciações</h3>
+            {isAdmin && editing && (
+              <button onClick={() => setAddingIniciacao(true)} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.3rem 0.6rem" }}>+ Adicionar</button>
+            )}
+          </div>
+          {(editing && isAdmin ? form.initiacoes : initiacoes).length > 0 ? (editing && isAdmin ? form.initiacoes : initiacoes).map((ini, i) => (
             <div key={ini.id || i} style={{ padding: "0.75rem", background: "#f0f7f3", borderRadius: "8px", border: "1px solid #d1fae5", marginBottom: "0.5rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -231,7 +281,12 @@ export default function FPerfil() {
                   )}
                   <span style={{ fontWeight: 600, color: "var(--egbe-green-dark)" }}>{ini.nome}</span>
                 </div>
-                {ini.data && <span style={{ fontSize: "0.8rem", color: "#888" }}>{ini.data}</span>}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {ini.data && <span style={{ fontSize: "0.8rem", color: "#888" }}>{ini.data}</span>}
+                  {isAdmin && editing && (
+                    <button onClick={() => setForm({ ...form, initiacoes: form.initiacoes.filter((x) => x.id !== ini.id) })} style={{ background: "none", border: "none", color: "var(--egbe-red)", cursor: "pointer", fontSize: "0.9rem" }}>✕</button>
+                  )}
+                </div>
               </div>
               {ini.oruko && (
                 <p style={{ fontSize: "0.82rem", color: "var(--egbe-green-dark)", marginTop: "0.25rem", fontStyle: "italic" }}>
@@ -242,25 +297,69 @@ export default function FPerfil() {
           )) : (
             <p style={{ color: "#ccc", fontStyle: "italic", fontSize: "0.88rem" }}>Nenhuma iniciação registrada.</p>
           )}
+          {isAdmin && editing && addingIniciacao && (
+            <div style={{ padding: "0.75rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb", marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <select style={fieldStyle} value={novaIniciacao.tipo} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, tipo: e.target.value })} >
+                  <option value="orisa">Òrìṣà</option>
+                  <option value="ifa">Ifá</option>
+                </select>
+                <input style={fieldStyle} value={novaIniciacao.nome} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, nome: e.target.value })} placeholder="Nome da iniciação" />
+              </div>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <input style={fieldStyle} type="date" value={novaIniciacao.data} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, data: e.target.value })} />
+                <input style={fieldStyle} value={novaIniciacao.oruko} onChange={(e) => setNovaIniciacao({ ...novaIniciacao, oruko: e.target.value })} placeholder="Orúkọ recebido" />
+              </div>
+              <div style={{ display: "flex", gap: "0.4rem" }}>
+                <button onClick={addIniciacao} className="btn btn-primary" style={{ fontSize: "0.78rem", padding: "0.3rem 0.7rem" }}>Adicionar</button>
+                <button onClick={() => setAddingIniciacao(false)} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.3rem 0.7rem" }}>Cancelar</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Cargos recebidos */}
         <div className="card">
-          <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Cargos recebidos</h3>
-          {cargos.length > 0 ? cargos.map((c, i) => (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h3 style={{ fontSize: "1.05rem", margin: 0 }}>Cargos recebidos</h3>
+            {isAdmin && editing && (
+              <button onClick={() => setAddingCargo(true)} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.3rem 0.6rem" }}>+ Adicionar</button>
+            )}
+          </div>
+          {(editing && isAdmin ? form.cargos : cargos).length > 0 ? (editing && isAdmin ? form.cargos : cargos).map((c, i) => (
             <div key={c.id || i} style={{ padding: "0.75rem", background: "#fef3c7", borderRadius: "8px", border: "1px solid #fde68a", marginBottom: "0.5rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontWeight: 600, color: "#92400e" }}>{c.nome}</span>
-                {c.data && <span style={{ fontSize: "0.8rem", color: "#888" }}>{c.data}</span>}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {c.data && <span style={{ fontSize: "0.8rem", color: "#888" }}>{c.data}</span>}
+                  {isAdmin && editing && (
+                    <button onClick={() => setForm({ ...form, cargos: form.cargos.filter((x) => x.id !== c.id) })} style={{ background: "none", border: "none", color: "var(--egbe-red)", cursor: "pointer", fontSize: "0.9rem" }}>✕</button>
+                  )}
+                </div>
               </div>
               {c.descricao && <p style={{ fontSize: "0.82rem", color: "#666", marginTop: "0.2rem" }}>{c.descricao}</p>}
             </div>
           )) : (
             <p style={{ color: "#ccc", fontStyle: "italic", fontSize: "0.88rem" }}>Nenhum cargo registrado.</p>
           )}
-          <p style={{ fontSize: "0.75rem", color: "#aaa", marginTop: "0.5rem", fontStyle: "italic" }}>
-            Cargos são atribuídos pelos administradores da casa.
-          </p>
+          {isAdmin && editing && addingCargo && (
+            <div style={{ padding: "0.75rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb", marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <input style={fieldStyle} value={novoCargo.nome} onChange={(e) => setNovoCargo({ ...novoCargo, nome: e.target.value })} placeholder="Nome do cargo" />
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <input style={fieldStyle} type="date" value={novoCargo.data} onChange={(e) => setNovoCargo({ ...novoCargo, data: e.target.value })} />
+                <input style={fieldStyle} value={novoCargo.descricao} onChange={(e) => setNovoCargo({ ...novoCargo, descricao: e.target.value })} placeholder="Descrição (opcional)" />
+              </div>
+              <div style={{ display: "flex", gap: "0.4rem" }}>
+                <button onClick={addCargo} className="btn btn-primary" style={{ fontSize: "0.78rem", padding: "0.3rem 0.7rem" }}>Adicionar</button>
+                <button onClick={() => setAddingCargo(false)} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.3rem 0.7rem" }}>Cancelar</button>
+              </div>
+            </div>
+          )}
+          {!isAdmin && (
+            <p style={{ fontSize: "0.75rem", color: "#aaa", marginTop: "0.5rem", fontStyle: "italic" }}>
+              Cargos são atribuídos pelos administradores da casa.
+            </p>
+          )}
         </div>
       </div>
 
