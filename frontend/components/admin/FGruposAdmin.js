@@ -212,13 +212,14 @@ function GroupForm({ form, setForm, users, userSearch, setUserSearch, saving, is
   const activeIds = new Set(active.map((m) => m.userId));
   const removedIds = new Set((form.members || []).filter((m) => m.removedAt).map((m) => m.userId));
 
+  const sortedUsers = [...users].sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
+  const available = sortedUsers.filter((u) => !activeIds.has(u.id));
   const candidates = userSearch
-    ? users.filter((u) =>
-        (u.displayName?.toLowerCase().includes(userSearch.toLowerCase()) ||
-         u.email?.toLowerCase().includes(userSearch.toLowerCase())) &&
-        !activeIds.has(u.id)
-      ).slice(0, 8)
-    : [];
+    ? available.filter((u) => {
+        const s = userSearch.toLowerCase();
+        return u.displayName?.toLowerCase().includes(s) || u.communityName?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s) || u.oruko?.toLowerCase().includes(s);
+      }).slice(0, 10)
+    : available.slice(0, 10);
 
   return (
     <div>
@@ -295,21 +296,24 @@ function GroupForm({ form, setForm, users, userSearch, setUserSearch, saving, is
             onChange={(e) => setUserSearch(e.target.value)}
             style={{ fontSize: "0.85rem" }}
           />
-          {candidates.length > 0 && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "white", border: "1px solid #e5e7eb", borderRadius: "8px", marginTop: "2px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, maxHeight: "220px", overflowY: "auto" }}>
-              {candidates.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => { toggleMember(u.id); setUserSearch(""); }}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "0.5rem 0.75rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.82rem", borderBottom: "1px solid #f3f4f6", fontFamily: "inherit" }}
-                >
-                  <strong>{u.displayName || "—"}</strong>
-                  <span style={{ color: "#888" }}> · {u.email}</span>
-                  {removedIds.has(u.id) && <span style={{ color: "var(--egbe-yellow)", marginLeft: "0.4rem", fontSize: "0.72rem" }}>(reativar — saiu antes)</span>}
-                </button>
-              ))}
-            </div>
-          )}
+          <div style={{ marginTop: "0.5rem", background: "white", border: "1px solid #e5e7eb", borderRadius: "8px", maxHeight: "220px", overflowY: "auto" }}>
+            {candidates.length === 0 ? (
+              <p style={{ padding: "0.6rem 0.75rem", fontSize: "0.82rem", color: "#aaa" }}>
+                {userSearch ? "Nenhum usuário encontrado." : "Nenhum usuário disponível."}
+              </p>
+            ) : candidates.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => { toggleMember(u.id); setUserSearch(""); }}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "0.5rem 0.75rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.82rem", borderBottom: "1px solid #f3f4f6", fontFamily: "inherit" }}
+              >
+                <strong>{u.displayName || "—"}</strong>
+                {u.oruko && <span style={{ color: "var(--egbe-green-dark)", fontStyle: "italic" }}> · {u.oruko}</span>}
+                <span style={{ color: "#888" }}> · {u.email}</span>
+                {removedIds.has(u.id) && <span style={{ color: "var(--egbe-yellow)", marginLeft: "0.4rem", fontSize: "0.72rem" }}>(reativar)</span>}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
