@@ -59,8 +59,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Settings (integrações, configurações sensíveis): só tecnico lê/escreve
+    // Settings: todos autenticados leem (calendário ose, orixás, etc.), admin escreve
     match /settings/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Integrações (API keys sensíveis): só tecnico lê/escreve
+    match /settings/integrations {
       allow read, write: if isAuth() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tecnico";
     }
