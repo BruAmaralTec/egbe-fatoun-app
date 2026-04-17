@@ -315,6 +315,18 @@ export default function FRituaisAdmin() {
 function RitualForm({ form, setForm, users, saving, isEditing, isAdmin, onCancel, onSave, onDelete }) {
   const isConsulta = form.type === "consulta";
   const template = !isConsulta ? RITUAIS[form.ritualTemplate] : null;
+  const [userSearch, setUserSearch] = useState("");
+
+  const sortedUsers = [...users].sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
+  const selectedUser = users.find((u) => u.id === form.userId);
+  const userCandidates = userSearch
+    ? sortedUsers.filter((u) =>
+        u.id !== form.userId &&
+        (u.displayName?.toLowerCase().includes(userSearch.toLowerCase()) ||
+         u.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
+         u.oruko?.toLowerCase().includes(userSearch.toLowerCase()))
+      ).slice(0, 8)
+    : [];
 
   const preceitoEnd = isConsulta ? preceitoEndDate(form.preceitoStartDate, form.preceitoDias) : null;
   const daysLeft = preceitoEnd ? daysUntil(preceitoEnd) : null;
@@ -372,16 +384,54 @@ function RitualForm({ form, setForm, users, saving, isEditing, isAdmin, onCancel
               <option value="obrigacao">Obrigação</option>
             </select>
           </div>
-          <div>
+          <div style={{ gridColumn: "1 / -1" }}>
             <label className="label">Usuário</label>
-            <select className="input-field" value={form.userId} onChange={(e) => setForm({ ...form, userId: e.target.value })}>
-              <option value="">Selecione...</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.displayName || "—"}{u.oruko ? ` · ${u.oruko}` : ""}{u.email ? ` (${u.email})` : ""}
-                </option>
-              ))}
-            </select>
+            {selectedUser ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", background: "#f0fdf4", border: "1.5px solid var(--egbe-green)", borderRadius: "8px" }}>
+                <span style={{ flex: 1, fontSize: "0.9rem" }}>
+                  <strong>{selectedUser.displayName || "—"}</strong>
+                  {selectedUser.oruko && <span style={{ color: "var(--egbe-green-dark)", fontStyle: "italic" }}> · {selectedUser.oruko}</span>}
+                  {selectedUser.email && <span style={{ color: "#888" }}> ({selectedUser.email})</span>}
+                </span>
+                <button onClick={() => { setForm({ ...form, userId: "" }); setUserSearch(""); }} style={{ background: "none", border: "none", color: "var(--egbe-red)", cursor: "pointer", fontSize: "1rem", padding: "0 0.25rem" }}>×</button>
+              </div>
+            ) : (
+              <div style={{ position: "relative" }}>
+                <input
+                  className="input-field"
+                  placeholder="Buscar por nome, Orúkọ ou email..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  style={{ fontSize: "0.88rem" }}
+                />
+                {(userSearch || !form.userId) && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "white", border: "1px solid #e5e7eb", borderRadius: "8px", marginTop: "2px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, maxHeight: "260px", overflowY: "auto" }}>
+                    <a
+                      href="/dashboard/membros"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "block", padding: "0.6rem 0.75rem", fontSize: "0.85rem", color: "var(--egbe-green)", fontWeight: 600, borderBottom: "1px solid #e5e7eb", textDecoration: "none" }}
+                    >
+                      + Novo usuário ↗
+                    </a>
+                    {(userSearch ? userCandidates : sortedUsers.slice(0, 10)).map((u) => (
+                      <button
+                        key={u.id}
+                        onClick={() => { setForm({ ...form, userId: u.id }); setUserSearch(""); }}
+                        style={{ display: "block", width: "100%", textAlign: "left", padding: "0.5rem 0.75rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.85rem", borderBottom: "1px solid #f3f4f6", fontFamily: "inherit" }}
+                      >
+                        <strong>{u.displayName || "—"}</strong>
+                        {u.oruko && <span style={{ color: "var(--egbe-green-dark)", fontStyle: "italic" }}> · {u.oruko}</span>}
+                        <span style={{ color: "#888" }}> · {u.email}</span>
+                      </button>
+                    ))}
+                    {userSearch && userCandidates.length === 0 && (
+                      <p style={{ padding: "0.6rem 0.75rem", fontSize: "0.82rem", color: "#aaa" }}>Nenhum usuário encontrado.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div>
             <label className="label">Data</label>
