@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
-import { collection, getDocs, doc, updateDoc, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 
 const CATEGORIES = [
@@ -50,6 +50,11 @@ export default function FNotificacoes() {
       await updateDoc(doc(db, "notifications", n.id), { read: true });
     }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  }
+
+  async function confirmView(id) {
+    await updateDoc(doc(db, "notifications", id), { read: true, confirmedAt: serverTimestamp() });
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true, confirmedAt: new Date() } : n));
   }
 
   const filtered = filter === "all" ? notifications : notifications.filter(n => n.category === filter);
@@ -101,9 +106,19 @@ export default function FNotificacoes() {
                       <p style={{ color: "#888", fontSize: "0.75rem", marginTop: "0.3rem" }}>{date.toLocaleDateString("pt-BR")} às {date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
                   </div>
-                  {!n.read && (
-                    <button onClick={() => markAsRead(n.id)} style={{ padding: "0.25rem 0.6rem", background: "none", border: "1px solid #d1d5db", borderRadius: "4px", fontSize: "0.72rem", color: "#888", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>Marcar lida</button>
-                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", alignItems: "flex-end" }}>
+                    {n.requiresConfirmation && !n.confirmedAt && (
+                      <button onClick={() => confirmView(n.id)} style={{ padding: "0.3rem 0.7rem", background: "var(--egbe-green)", border: "none", borderRadius: "4px", fontSize: "0.72rem", color: "white", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600 }}>
+                        ✓ Confirmar visualização
+                      </button>
+                    )}
+                    {n.requiresConfirmation && n.confirmedAt && (
+                      <span style={{ fontSize: "0.72rem", color: "var(--egbe-green)", fontWeight: 600, whiteSpace: "nowrap" }}>✓ Confirmado</span>
+                    )}
+                    {!n.read && !n.requiresConfirmation && (
+                      <button onClick={() => markAsRead(n.id)} style={{ padding: "0.25rem 0.6rem", background: "none", border: "1px solid #d1d5db", borderRadius: "4px", fontSize: "0.72rem", color: "#888", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>Marcar lida</button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

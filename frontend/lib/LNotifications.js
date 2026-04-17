@@ -15,10 +15,12 @@ import { db } from "./LFirebase";
  * @param {string} opts.category - ritual | payment | event | course | system
  * @param {string} [opts.link] - rota opcional para clicar
  */
-export async function createNotification({ userId, title, message, category = "system", link = null }) {
+export async function createNotification({ userId, title, message, category = "system", link = null, groupId = null, dispatchId = null, requiresConfirmation = false }) {
   return addDoc(collection(db, "notifications"), {
     userId, title, message, category, link,
+    groupId, dispatchId, requiresConfirmation,
     read: false,
+    confirmedAt: null,
     createdAt: serverTimestamp(),
   });
 }

@@ -76,5 +76,15 @@ service cloud.firestore {
     match /rituals/{ritualId} {
       allow read, write: if isConselho();
     }
+
+    // Grupos dinâmicos: conselho+ gerencia
+    match /groups/{groupId} {
+      allow read, write: if isConselho();
+
+      // Subcoleção de dispatches (histórico de notificações enviadas ao grupo)
+      match /dispatches/{dispatchId} {
+        allow read, write: if isConselho();
+      }
+    }
   }
 }
