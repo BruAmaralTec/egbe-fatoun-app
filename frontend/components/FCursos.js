@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 
@@ -86,7 +87,12 @@ export default function FCursos() {
             const agenda = agendaSummary(course.days);
             const plain = course.description ? course.description.replace(/<[^>]*>/g, "").trim() : "";
             return (
-              <div key={course.id} className="card" style={{ display: "flex", flexDirection: "column" }}>
+              <Link
+                key={course.id}
+                href={`/dashboard/cursos/${course.id}`}
+                className="card"
+                style={{ display: "flex", flexDirection: "column", textDecoration: "none", color: "inherit" }}
+              >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem", gap: "0.5rem" }}>
                   {st && (
                     <span style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem", borderRadius: "4px", background: st.bg, color: st.color, fontWeight: 500 }}>
@@ -132,18 +138,10 @@ export default function FCursos() {
                   )}
                 </div>
 
-                {course.paymentLink && course.status !== "finished" && (
-                  <a
-                    href={course.paymentLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-primary"
-                    style={{ marginTop: "0.75rem", textAlign: "center", justifyContent: "center", textDecoration: "none" }}
-                  >
-                    Inscrever-se ↗
-                  </a>
-                )}
-              </div>
+                <span style={{ marginTop: "0.75rem", fontSize: "0.82rem", color: "var(--egbe-green)", fontWeight: 600 }}>
+                  Ver detalhes →
+                </span>
+              </Link>
             );
           })}
         </div>
