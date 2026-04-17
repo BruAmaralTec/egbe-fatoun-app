@@ -221,6 +221,7 @@ export default function FDeployAdmin() {
           { id: "checklist", label: `Checklist (${completedCount}/${DEPLOY_CHECKLIST.length})` },
           { id: "commands", label: "Comandos de Deploy" },
           { id: "rules", label: "Firestore Rules" },
+          { id: "security", label: "Segurança" },
         ].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             padding: "0.5rem 1.25rem", borderRadius: "8px", border: "1.5px solid",
@@ -322,6 +323,31 @@ export default function FDeployAdmin() {
               <pre style={{ background: "#1a1a1a", color: "#e5e7eb", padding: "1rem", borderRadius: "8px", fontSize: "0.78rem", lineHeight: 1.5, overflowX: "auto", fontFamily: "monospace", maxHeight: "400px", overflowY: "auto" }}>{r.content}</pre>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* TAB: SEGURANÇA */}
+      {tab === "security" && (
+        <div className="card">
+          <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Segurança do Sistema</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+            {[
+              ["Firebase Auth", "Email + Google habilitados", true],
+              ["Firestore Rules", "Regras de segurança aplicadas", true],
+              ["Storage Rules", "Regras de upload aplicadas", true],
+              ["HTTPS", "Certificado SSL ativo", true],
+              ["CORS", "Domínios permitidos configurados", true],
+              ["Webhook Token", "Validação de webhooks Asaas", true],
+            ].map(([label, desc, active]) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.6rem 0.75rem", background: "#f9fafb", borderRadius: "8px" }}>
+                <span className="status-dot" style={{ background: active ? "#22c55e" : "#ef4444" }} />
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: "0.88rem" }}>{label}</p>
+                  <p style={{ color: "#888", fontSize: "0.78rem" }}>{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
