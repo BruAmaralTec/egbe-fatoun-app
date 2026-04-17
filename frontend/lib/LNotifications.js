@@ -5,6 +5,7 @@
 
 import { collection, addDoc, getDocs, query, where, serverTimestamp } from "firebase/firestore";
 import { db } from "./LFirebase";
+import { sendPush } from "./LApi";
 
 /**
  * Cria uma notificação no Firestore.
@@ -30,7 +31,13 @@ export async function createNotification({ userId, title, message, category = "s
  * @param {string[]} userIds
  */
 export async function notifyUsers(userIds, data) {
-  return Promise.all(userIds.map((userId) => createNotification({ ...data, userId })));
+  await Promise.all(userIds.map((userId) => createNotification({ ...data, userId })));
+  // Dispara push em paralelo (best-effort — não bloqueia se falhar)
+  try {
+    await sendPush({ userIds, title: data.title, body: data.message, link: data.link });
+  } catch (err) {
+    console.warn("Push não enviado:", err.message);
+  }
 }
 
 /**

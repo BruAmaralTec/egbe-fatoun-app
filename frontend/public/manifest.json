@@ -1,0 +1,18 @@
+{
+  "name": "Ẹgbẹ́ Fátọ́ún",
+  "short_name": "Ẹgbẹ́ Fátọ́ún",
+  "description": "Templo Religioso de Ìfá e Òrìṣà",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1B6B3A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

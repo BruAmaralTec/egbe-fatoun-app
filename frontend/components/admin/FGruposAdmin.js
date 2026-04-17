@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { createNotification } from "@/lib/LNotifications";
+import { sendPush } from "@/lib/LApi";
 
 const DEFAULT_COLORS = ["#1B6B3A", "#B22222", "#D4A017", "#1a4080", "#6366f1", "#6d28d9", "#0891b2", "#059669"];
 
@@ -382,6 +383,12 @@ function GroupDetail({ group, userById, currentUserUid, onBack, onEdit, onDelete
         dispatchId,
         requiresConfirmation: requiresConfirm,
       })));
+      // push best-effort
+      try {
+        await sendPush({ userIds: memberIds, title: sendTitle, body: sendMessage, link: "/dashboard/notificacoes" });
+      } catch (err) {
+        console.warn("Push não enviado:", err.message);
+      }
       // cria o doc de histórico
       const dispatchDoc = {
         dispatchId,

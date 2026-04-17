@@ -12,6 +12,7 @@ import { db } from "@/lib/LFirebase";
 import { useAuth } from "@/lib/LAuthContext";
 import { ROLES } from "@/lib/LPermissions";
 import { DEFAULT_ORIXAS } from "@/lib/LOse";
+import { pushSupported, pushPermission, registerDevice } from "@/lib/LPush";
 
 export default function FPerfil() {
   const { user, profile, setProfile } = useAuth();
@@ -20,6 +21,9 @@ export default function FPerfil() {
   const [form, setForm] = useState({});
   const [orixas, setOrixas] = useState(DEFAULT_ORIXAS);
   const [savingNotify, setSavingNotify] = useState(false);
+  const [pushState, setPushState] = useState({ supported: false, permission: "default" });
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState("");
 
   useEffect(() => {
     async function loadOrixas() {
@@ -28,6 +32,28 @@ export default function FPerfil() {
     }
     loadOrixas();
   }, []);
+
+  useEffect(() => {
+    async function checkPush() {
+      const supported = await pushSupported();
+      setPushState({ supported, permission: pushPermission() });
+    }
+    checkPush();
+  }, []);
+
+  async function enablePush() {
+    setPushBusy(true);
+    setPushError("");
+    try {
+      await registerDevice(user.uid);
+      setPushState({ supported: true, permission: "granted" });
+      alert("Notificações push ativadas neste dispositivo!");
+    } catch (err) {
+      setPushError(err.message);
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   async function toggleOrixaNotify(name) {
     const current = profile.oseOrixasNotify || [];
@@ -234,6 +260,32 @@ export default function FPerfil() {
             Cargos são atribuídos pelos administradores da casa.
           </p>
         </div>
+      </div>
+
+      {/* Push notifications neste dispositivo */}
+      <div className="card" style={{ marginTop: "1rem" }}>
+        <h3 style={{ fontSize: "1.05rem", marginBottom: "0.25rem" }}>Notificações no celular</h3>
+        <p style={{ fontSize: "0.82rem", color: "#666", marginBottom: "0.75rem" }}>
+          Ative para receber lembretes do Ẹgbẹ́ Fátọ́ún como push no seu dispositivo (mesmo com o app fechado).
+        </p>
+        {!pushState.supported ? (
+          <p style={{ fontSize: "0.82rem", color: "#888", fontStyle: "italic" }}>
+            Este navegador não suporta notificações push. Instale o app (Adicionar à tela inicial) para ativar.
+          </p>
+        ) : pushState.permission === "granted" ? (
+          <p style={{ fontSize: "0.85rem", color: "var(--egbe-green)", fontWeight: 600 }}>
+            ✔ Notificações ativadas neste dispositivo.
+          </p>
+        ) : pushState.permission === "denied" ? (
+          <p style={{ fontSize: "0.82rem", color: "var(--egbe-red)" }}>
+            Permissão negada. Reative nas configurações do navegador.
+          </p>
+        ) : (
+          <button className="btn btn-primary" onClick={enablePush} disabled={pushBusy}>
+            {pushBusy ? "Ativando..." : "🔔 Ativar notificações"}
+          </button>
+        )}
+        {pushError && <p style={{ fontSize: "0.78rem", color: "var(--egbe-red)", marginTop: "0.5rem" }}>{pushError}</p>}
       </div>
 
       {/* Notificações de Ọ̀sẹ̀ por Òrìṣà */}

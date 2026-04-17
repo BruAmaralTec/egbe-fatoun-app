@@ -10,6 +10,9 @@ export const metadata = {
   title: "Ẹgbẹ́ Fátọ́ún — Templo Religioso de Ìfá e Òrìṣà",
   description:
     "Ẹgbẹ́ Fátọ́ún é um templo dedicado à tradição de Ìfá e Òrìṣà, sob a liderança da Ìyánífá Fátọ́ún.",
+  manifest: "/manifest.json",
+  themeColor: "#1B6B3A",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Ẹgbẹ́ Fátọ́ún" },
 };
 
 export default function RootLayout({ children }) {
