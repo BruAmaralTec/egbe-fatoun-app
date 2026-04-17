@@ -71,4 +71,22 @@ export async function deleteUser(uid) {
   return res.data;
 }
 
+// ----------------------------------------
+// TRADUÇÃO (SerpAPI)
+// ----------------------------------------
+
+export async function translate({ text, sourceLang, targetLang }) {
+  const res = await api.post("/api/translate", { text, sourceLang, targetLang });
+  return res.data;
+}
+
+// ----------------------------------------
+// PUSH NOTIFICATIONS
+// ----------------------------------------
+
+export async function sendPush({ userIds, title, body, link }) {
+  const res = await api.post("/api/push/notify", { userIds, title, body, link });
+  return res.data;
+}
+
 export default api;

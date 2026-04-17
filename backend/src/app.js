@@ -14,6 +14,8 @@ const paymentsRoutes = require("./routes/BPayments");
 const webhooksRoutes = require("./routes/BWebhooks");
 const usersRoutes = require("./routes/BUsers");
 const autentiqueRoutes = require("./routes/BAutentique");
+const translateRoutes = require("./routes/BTranslate");
+const pushRoutes = require("./routes/BPush");
 
 const app = express();
 
@@ -56,6 +58,8 @@ app.use("/api/payments", paymentsRoutes);
 app.use("/api/webhooks", webhooksRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/autentique", autentiqueRoutes);
+app.use("/api/translate", translateRoutes);
+app.use("/api/push", pushRoutes);
 
 // 404 — rota não encontrada
 app.use((req, res) => {

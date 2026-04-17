@@ -8,6 +8,7 @@
 "use client";
 
 import { useState } from "react";
+import { translate as translateApi } from "@/lib/LApi";
 
 const LANGS = [
   { code: "pt", label: "Português (BR)" },
@@ -45,23 +46,11 @@ export default function FDicionario() {
     if (!sourceText.trim()) return;
     setTranslating(true);
     setTranslation("");
-    const fLabel = LANGS.find(l => l.code === fromLang)?.label;
-    const tLabel = LANGS.find(l => l.code === toLang)?.label;
     try {
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: "Você é especialista em tradução com profundo conhecimento do Yorùbá tradicional de Ilé-Ifẹ̀, incluindo diacríticos tonais completos. Traduza com precisão mantendo o tom litúrgico e sagrado quando presente. Retorne APENAS a tradução, sem explicações ou marcações.",
-          messages: [{ role: "user", content: `Traduza de ${fLabel} para ${tLabel}:\n\n${sourceText}` }],
-        }),
-      });
-      const d = await r.json();
-      setTranslation(d.content?.[0]?.text || "Erro na tradução.");
-    } catch {
-      setTranslation("Erro ao conectar. Verifique a conexão.");
+      const data = await translateApi({ text: sourceText, sourceLang: fromLang, targetLang: toLang });
+      setTranslation(data.translation || "Sem tradução.");
+    } catch (err) {
+      setTranslation("Erro ao traduzir: " + (err.response?.data?.error || err.message));
     } finally {
       setTranslating(false);
     }
