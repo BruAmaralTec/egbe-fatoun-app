@@ -23,8 +23,8 @@ router.post("/", verifyToken, async (req, res) => {
     const result = await translate.translate({ text, sourceLang, targetLang });
     res.json(result);
   } catch (error) {
-    console.error("Erro ao traduzir:", error.message);
-    res.status(500).json({ error: "Erro ao traduzir", details: error.message });
+    console.error("Erro ao traduzir:", error.message, error.response?.data || "");
+    res.status(500).json({ error: error.message });
   }
 });
 
