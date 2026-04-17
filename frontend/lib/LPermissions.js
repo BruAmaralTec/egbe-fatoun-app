@@ -22,10 +22,9 @@ export const ALL_AREAS = [
   { key: "notificacoes", label: "Notificações", href: "/dashboard/notificacoes", icon: "🔔", group: "Comunidade" },
 
   // Gestão
-  { key: "membros", label: "Filhos da Casa", href: "/dashboard/membros", icon: "👥", group: "Gestão" },
+  { key: "membros", label: "Gestão de Usuários", href: "/dashboard/membros", icon: "👥", group: "Gestão" },
   { key: "admin-eventos", label: "Gerenciar Eventos", href: "/dashboard/admin/eventos", icon: "📅", group: "Gestão" },
   { key: "admin-cursos", label: "Gerenciar Cursos", href: "/dashboard/admin/cursos", icon: "🎓", group: "Gestão" },
-  { key: "admin-usuarios", label: "Gerenciar Usuários", href: "/dashboard/admin/usuarios", icon: "⚙️", group: "Gestão" },
   { key: "admin-certificados", label: "Certificados", href: "/dashboard/admin/certificados", icon: "📜", group: "Gestão" },
   { key: "admin-rituais", label: "Gestão de Rituais", href: "/dashboard/admin/rituais", icon: "🕯️", group: "Gestão" },
   { key: "admin-ose", label: "Gestão do Calendário Ọ̀sẹ̀", href: "/dashboard/admin/ose", icon: "📿", group: "Gestão" },
@@ -44,8 +43,8 @@ export const DEFAULT_PERMISSIONS = {
   cliente: ["eventos", "cursos", "ose"],
   midias: ["eventos", "cursos", "ose", "admin-eventos", "admin-cursos"],
   filho: ["eventos", "cursos", "ose", "biblioteca", "dicionario", "pagamentos", "notificacoes"],
-  conselho: ["eventos", "cursos", "ose", "biblioteca", "dicionario", "pagamentos", "notificacoes", "membros", "admin-eventos", "admin-cursos", "admin-usuarios", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes"],
-  sacerdote: ["eventos", "cursos", "ose", "biblioteca", "dicionario", "pagamentos", "notificacoes", "membros", "admin-eventos", "admin-cursos", "admin-usuarios", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes", "admin-financeiro"],
+  conselho: ["eventos", "cursos", "ose", "biblioteca", "dicionario", "pagamentos", "notificacoes", "membros", "admin-eventos", "admin-cursos", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes"],
+  sacerdote: ["eventos", "cursos", "ose", "biblioteca", "dicionario", "pagamentos", "notificacoes", "membros", "admin-eventos", "admin-cursos", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes", "admin-financeiro"],
   tecnico: ALL_AREAS.map((a) => a.key),
 };
 

@@ -143,10 +143,6 @@ export default function FUsuariosAdmin() {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Gerenciar Usuários</h1>
-          <p style={{ color: "#666", fontSize: "0.9rem" }}>{users.length} usuários cadastrados</p>
-        </div>
         <button onClick={() => setCreating(true)} className="btn btn-primary" style={{ padding: "0.6rem 1.25rem" }}>
           + Novo usuário
         </button>
