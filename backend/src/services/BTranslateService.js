@@ -1,57 +1,53 @@
 // ========================================
 // src/services/BTranslateService.js
-// Tradução via SerpAPI — engine google_translate
-// https://serpapi.com/google-translate
+// Tradução via Google Cloud Translation API v2
+// Usa as credenciais do Cloud Run (ADC) — sem API key extra
 // ========================================
 
 const axios = require("axios");
 const admin = require("firebase-admin");
 
-async function getApiKey() {
-  const snap = await admin.firestore().doc("settings/integrations").get();
-  const key = snap.exists ? snap.data().serpapi?.apiKey : null;
-  return key || process.env.SERPAPI_KEY || null;
+/**
+ * Obtém access token do service account do Cloud Run.
+ */
+async function getAccessToken() {
+  const credential = admin.app().options.credential;
+  const token = await credential.getAccessToken();
+  return token.access_token;
 }
 
+/**
+ * Traduz texto via Google Cloud Translation API v2.
+ * Docs: https://cloud.google.com/translate/docs/reference/rest/v2/translations/translate
+ *
+ * Códigos suportados: pt, es, en, fr, yo (Yorùbá), etc.
+ */
 async function translate({ text, sourceLang, targetLang }) {
-  const apiKey = await getApiKey();
-  if (!apiKey) throw new Error("SerpAPI key não configurada. Vá em Integrações e salve a API Key do SerpAPI.");
+  const token = await getAccessToken();
 
-  const res = await axios.get("https://serpapi.com/search.json", {
-    params: {
-      engine: "google_translate",
+  const res = await axios.post(
+    "https://translation.googleapis.com/language/translate/v2",
+    {
       q: text,
-      hl: "pt",
-      sl: sourceLang || "auto",
-      tl: targetLang,
-      api_key: apiKey,
+      source: sourceLang || "",
+      target: targetLang,
+      format: "text",
     },
-    timeout: 20000,
-  });
+    {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      timeout: 15000,
+    }
+  );
 
-  const data = res.data;
-
-  if (data.error) {
-    throw new Error("SerpAPI: " + data.error);
-  }
-
-  // SerpAPI retorna em diferentes formatos dependendo da versão
-  const translated =
-    data.translation_results?.translation ||
-    data.translation_results?.translated_text ||
-    data.translation?.translated_text ||
-    data.translation?.target_text ||
-    null;
-
-  if (!translated) {
-    console.error("SerpAPI resposta inesperada:", JSON.stringify(data).slice(0, 500));
-    throw new Error("SerpAPI não retornou tradução. Verifique se a key está ativa em serpapi.com/dashboard");
+  const translations = res.data?.data?.translations;
+  if (!translations || translations.length === 0) {
+    throw new Error("Google Translate não retornou resultado");
   }
 
   return {
-    translation: translated,
-    sourceLang: data.translation_results?.source_language || data.translation?.source_language || sourceLang,
-    targetLang: data.translation_results?.target_language || data.translation?.target_language || targetLang,
+    translation: translations[0].translatedText,
+    sourceLang: translations[0].detectedSourceLanguage || sourceLang,
+    targetLang,
   };
 }
 
