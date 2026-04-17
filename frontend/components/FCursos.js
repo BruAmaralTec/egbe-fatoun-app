@@ -10,6 +10,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
+import { useAuth } from "@/lib/LAuthContext";
+
+const ROLES_WITH_FINISHED = ["sacerdote", "tecnico", "midias"];
 
 const STATUS_LABELS = {
   open: { label: "Inscrições Abertas", color: "#22c55e", bg: "#dcfce7" },
@@ -36,6 +39,8 @@ function agendaSummary(days = []) {
 }
 
 export default function FCursos() {
+  const { profile } = useAuth();
+  const canSeeFinished = ROLES_WITH_FINISHED.includes(profile?.role);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -68,7 +73,9 @@ export default function FCursos() {
       <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem" }}>Formações e estudos do Ẹgbẹ́ Fátọ́ún</p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1.5rem" }}>
-        {[{ value: "all", label: "Todos" }, ...Object.entries(STATUS_LABELS).map(([value, { label }]) => ({ value, label }))].map((opt) => (
+        {[{ value: "all", label: "Todos" }, ...Object.entries(STATUS_LABELS)
+          .filter(([value]) => canSeeFinished || value !== "finished")
+          .map(([value, { label }]) => ({ value, label }))].map((opt) => (
           <button key={opt.value} onClick={() => setFilter(opt.value)} className={`btn ${filter === opt.value ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: "0.82rem", padding: "0.35rem 0.75rem" }}>
             {opt.label}
           </button>
