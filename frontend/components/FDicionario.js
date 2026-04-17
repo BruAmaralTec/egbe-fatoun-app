@@ -36,7 +36,7 @@ export default function FDicionario() {
   const [copiedIndex, setCopiedIndex] = useState(null);
 
   function copyPhrase(phrase, index) {
-    const yoruba = phrase.split(" — ")[0];
+    const yoruba = phrase.split(" — ")[0].normalize("NFC");
     navigator.clipboard.writeText(yoruba);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 1500);
@@ -137,7 +137,7 @@ export default function FDicionario() {
           ) : translation ? (
             <div>
               <p style={{ fontSize: "1rem", lineHeight: 1.7, color: "#1a1a1a" }}>{translation}</p>
-              <button onClick={() => navigator.clipboard.writeText(translation)} style={{ marginTop: "0.5rem", padding: "0.3rem 0.7rem", background: "none", border: "1.5px solid var(--egbe-green)", borderRadius: "4px", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>Copiar</button>
+              <button onClick={() => navigator.clipboard.writeText(translation.normalize("NFC"))} style={{ marginTop: "0.5rem", padding: "0.3rem 0.7rem", background: "none", border: "1.5px solid var(--egbe-green)", borderRadius: "4px", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>Copiar</button>
             </div>
           ) : (
             <p style={{ color: "#ccc", fontStyle: "italic" }}>A tradução aparecerá aqui...</p>
