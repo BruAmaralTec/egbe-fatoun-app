@@ -135,6 +135,9 @@ export default function FOseCalendar() {
 
       {/* Card do dia de hoje (padrão no topo) */}
       <div className="card" style={{ marginBottom: "1.25rem", borderLeft: `4px solid ${todayMainColor}` }}>
+        <p style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: todayMainColor, marginBottom: "0.25rem" }}>
+          Ọ̀sẹ̀ de Hoje
+        </p>
         <h3 style={{ fontSize: "1.05rem", margin: 0 }}>
           {todayD} de {MONTHS[todayM]} de {todayY}
         </h3>
@@ -142,7 +145,7 @@ export default function FOseCalendar() {
           <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.4rem" }}>
             {todayCycles.map((c) => (
               <span key={c.id} style={{ fontSize: "0.78rem", padding: "0.2rem 0.6rem", borderRadius: "12px", background: (c.color || "#6b7280") + "20", color: c.color || "#374151", fontWeight: 600 }}>
-                Ọ̀sẹ̀ {c.name}
+                {c.name}
               </span>
             ))}
           </div>
