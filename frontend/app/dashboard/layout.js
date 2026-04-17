@@ -13,7 +13,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import Link from "next/link";
 import FNotificationBell from "@/components/FNotificationBell";
-import { FIXED_AREAS, ALL_AREAS, DEFAULT_PERMISSIONS } from "@/lib/LPermissions";
+import { FIXED_AREAS, ADMIN_ONLY_AREAS, ALL_AREAS, DEFAULT_PERMISSIONS } from "@/lib/LPermissions";
 
 export default function DashboardLayout({ children }) {
   const { user, profile, loading, logout } = useAuth();
@@ -57,7 +57,8 @@ export default function DashboardLayout({ children }) {
     ? ALL_AREAS.map((a) => a.key)
     : (rolePermissions[role] || DEFAULT_PERMISSIONS[role] || []);
   const dynamicItems = ALL_AREAS.filter((area) => allowedKeys.includes(area.key));
-  const visibleMenu = [...FIXED_AREAS, ...dynamicItems];
+  const isAdminRole = role === "sacerdote" || role === "tecnico";
+  const visibleMenu = [...(isAdminRole ? ADMIN_ONLY_AREAS : []), ...FIXED_AREAS, ...dynamicItems];
 
   // Agrupa por group para mostrar separadores
   let lastGroup = null;

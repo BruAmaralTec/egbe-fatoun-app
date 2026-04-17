@@ -132,7 +132,7 @@ export default function FPerfil() {
             </p>
           )}
           <span className={`badge badge-${profile.role || "cliente"}`} style={{ marginTop: "0.5rem" }}>
-            {profile.role || "cliente"}
+            {roleLabel}
           </span>
         </div>
       </div>

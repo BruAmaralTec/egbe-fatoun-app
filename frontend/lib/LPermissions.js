@@ -6,8 +6,12 @@
 
 // Áreas fixas que todos veem (não configuráveis)
 export const FIXED_AREAS = [
-  { key: "inicio", label: "Início", href: "/dashboard", icon: "🏠" },
   { key: "perfil", label: "Meu Perfil", href: "/dashboard/perfil", icon: "👤" },
+];
+
+// Início só para sacerdotisa e técnico
+export const ADMIN_ONLY_AREAS = [
+  { key: "inicio", label: "Início", href: "/dashboard", icon: "🏠" },
 ];
 
 // Todas as áreas configuráveis do sistema

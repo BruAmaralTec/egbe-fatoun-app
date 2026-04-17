@@ -157,7 +157,7 @@ export default function FNotificacoesAdmin() {
                     setSelectedUsers(e.target.checked ? [...selectedUsers, u.id] : selectedUsers.filter((x) => x !== u.id));
                   }} />
                   <span>{u.displayName || u.email}</span>
-                  <span className={`badge badge-${u.role || "cliente"}`} style={{ marginLeft: "auto" }}>{u.role || "cliente"}</span>
+                  <span className={`badge badge-${u.role || "cliente"}`} style={{ marginLeft: "auto" }}>{ROLES.find((r) => r.value === u.role)?.label || "Cliente"}</span>
                 </label>
               ))}
             </div>
