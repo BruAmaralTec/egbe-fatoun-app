@@ -6,6 +6,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/lib/LAuthContext";
 import { ModalProvider } from "@/lib/LModalContext";
+import FVersionCheck from "@/components/FVersionCheck";
 
 export const metadata = {
   title: "Ẹgbẹ́ Fátọ́ún — Templo Religioso de Ìfá e Òrìṣà",
@@ -29,7 +30,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        <ModalProvider><AuthProvider>{children}</AuthProvider></ModalProvider>
+        <ModalProvider><AuthProvider><FVersionCheck />{children}</AuthProvider></ModalProvider>
       </body>
     </html>
   );
