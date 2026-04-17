@@ -22,8 +22,6 @@ export default function FOseCalendar() {
   const [filters, setFilters] = useState([]);
   const [cycleFilters, setCycleFilters] = useState([]);
   const [timeFilter, setTimeFilter] = useState("mes");
-  const [periodStart, setPeriodStart] = useState("");
-  const [periodEnd, setPeriodEnd] = useState("");
   const [showOrixaDropdown, setShowOrixaDropdown] = useState(false);
   const orixaDropdownRef = useRef(null);
   const [dayOverrides, setDayOverrides] = useState({});
@@ -82,12 +80,6 @@ export default function FOseCalendar() {
       const start = new Date(t0); start.setDate(t0.getDate() - day);
       const end = new Date(start); end.setDate(start.getDate() + 6);
       return d0 >= start && d0 <= end;
-    }
-    if (timeFilter === "periodo") {
-      if (!periodStart || !periodEnd) return true;
-      const s = new Date(periodStart + "T00:00:00");
-      const e = new Date(periodEnd + "T00:00:00");
-      return d0 >= s && d0 <= e;
     }
     return true;
   }
@@ -311,7 +303,6 @@ export default function FOseCalendar() {
         {[
           { id: "semana", label: "Semana" },
           { id: "mes", label: "Mês" },
-          { id: "periodo", label: "Período" },
         ].map((opt) => (
           <button
             key={opt.id}
@@ -331,13 +322,6 @@ export default function FOseCalendar() {
             {opt.label}
           </button>
         ))}
-        {timeFilter === "periodo" && (
-          <>
-            <input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "150px", fontSize: "0.8rem" }} />
-            <span style={{ fontSize: "0.8rem", color: "#888" }}>até</span>
-            <input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "150px", fontSize: "0.8rem" }} />
-          </>
-        )}
       </div>
 
       {/* Navegação do mês */}
