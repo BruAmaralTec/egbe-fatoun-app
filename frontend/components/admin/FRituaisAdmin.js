@@ -103,6 +103,11 @@ const EMPTY_CONSULTA = {
   oduPrincipal: { leftMarks: ["I","I","I","I"], rightMarks: ["I","I","I","I"] },
   odusAuxiliares: [],
   orientacoes: "",
+  eboTemplate: "",
+  eboMateriaisCheck: {},
+  eboMateriaisQtd: {},
+  eboPreparoCheck: {},
+  eboExtras: "",
   tabus: "",
   preceitoDias: 0,
   preceitoStartDate: "",
@@ -484,14 +489,67 @@ function RitualForm({ form, setForm, users, saving, isEditing, isAdmin, onCancel
             </div>
           </div>
 
-          {/* Orientações e tabus */}
+          {/* Orientações */}
           <div className="card" style={{ marginBottom: "1rem" }}>
             <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Orientações do Jogo</h3>
             <FRichTextEditor value={form.orientacoes || ""} onChange={(html) => setForm({ ...form, orientacoes: html })} placeholder="Resumo das orientações que saíram..." minHeight="140px" />
-            <div style={{ marginTop: "1rem" }}>
-              <label className="label">Proibições / Tabus</label>
-              <FRichTextEditor value={form.tabus || ""} onChange={(html) => setForm({ ...form, tabus: html })} placeholder="Tabus alimentares, comportamentais, etc..." minHeight="100px" />
+          </div>
+
+          {/* Ebó a ser realizado */}
+          <div className="card" style={{ marginBottom: "1rem" }}>
+            <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>🕯️ Ebó a ser realizado</h3>
+            <p style={{ fontSize: "0.82rem", color: "#888", marginBottom: "0.75rem" }}>
+              Selecione o tipo de ebó prescrito na consulta. A lista de materiais e preparo será exibida.
+            </p>
+            <div style={{ marginBottom: "0.75rem" }}>
+              <label className="label">Tipo de Ebó</label>
+              <select className="input-field" value={form.eboTemplate || ""} onChange={(e) => setForm({ ...form, eboTemplate: e.target.value, eboMateriaisCheck: {}, eboMateriaisQtd: {}, eboPreparoCheck: {} })}>
+                <option value="">Nenhum ebó prescrito</option>
+                {Object.entries(RITUAIS).map(([key, r]) => <option key={key} value={key}>{r.nome}</option>)}
+              </select>
             </div>
+            {form.eboTemplate && RITUAIS[form.eboTemplate] && (() => {
+              const tpl = RITUAIS[form.eboTemplate];
+              return (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+                  <div>
+                    <h4 style={{ fontSize: "0.95rem", marginBottom: "0.5rem", color: tpl.cor }}>🛒 Materiais</h4>
+                    {tpl.compra.map((item, i) => {
+                      const checked = !!form.eboMateriaisCheck?.[i];
+                      const qtd = form.eboMateriaisQtd?.[i] !== undefined ? form.eboMateriaisQtd[i] : item.qtd;
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0", borderBottom: "1px solid #f3f4f6" }}>
+                          <input type="checkbox" checked={checked} onChange={() => setForm({ ...form, eboMateriaisCheck: { ...form.eboMateriaisCheck, [i]: !checked } })} style={{ accentColor: tpl.cor, flexShrink: 0 }} />
+                          <span style={{ flex: 1, fontSize: "0.88rem", textDecoration: checked ? "line-through" : "none", color: checked ? "#888" : "#1a1a1a" }}>{item.nome}</span>
+                          <input type="text" value={qtd} onChange={(e) => setForm({ ...form, eboMateriaisQtd: { ...form.eboMateriaisQtd, [i]: e.target.value } })} style={{ width: "80px", padding: "0.25rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.8rem", textAlign: "center" }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: "0.95rem", marginBottom: "0.5rem", color: tpl.cor }}>🔥 Preparo</h4>
+                    {tpl.preparo.map((step, i) => (
+                      <label key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0", cursor: "pointer", borderBottom: "1px solid #f3f4f6" }}>
+                        <input type="checkbox" checked={!!form.eboPreparoCheck?.[i]} onChange={() => setForm({ ...form, eboPreparoCheck: { ...form.eboPreparoCheck, [i]: !form.eboPreparoCheck?.[i] } })} style={{ accentColor: tpl.cor }} />
+                        <span style={{ fontSize: "0.88rem", textDecoration: form.eboPreparoCheck?.[i] ? "line-through" : "none", color: form.eboPreparoCheck?.[i] ? "#888" : "#1a1a1a" }}>{step}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            {form.eboTemplate && (
+              <div style={{ marginTop: "0.75rem" }}>
+                <label className="label">Materiais extras do ebó</label>
+                <textarea className="input-field" rows={2} value={form.eboExtras || ""} onChange={(e) => setForm({ ...form, eboExtras: e.target.value })} placeholder="Materiais adicionais prescritos no jogo..." style={{ resize: "vertical" }} />
+              </div>
+            )}
+          </div>
+
+          {/* Proibições / Tabus */}
+          <div className="card" style={{ marginBottom: "1rem" }}>
+            <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Proibições / Tabus</h3>
+            <FRichTextEditor value={form.tabus || ""} onChange={(html) => setForm({ ...form, tabus: html })} placeholder="Tabus alimentares, comportamentais, etc..." minHeight="100px" />
           </div>
 
           {/* Preceito */}
