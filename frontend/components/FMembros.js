@@ -8,9 +8,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/LAuthContext";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
+
+const FGruposAdmin = dynamic(() => import("@/components/admin/FGruposAdmin"), { ssr: false });
 
 // Ordem fixa dos grupos e quais roles cada um inclui
 const GROUPS = [
@@ -22,7 +25,8 @@ const GROUPS = [
 ];
 
 export default function FMembros() {
-  const { isConselho } = useAuth();
+  const { isConselho, isAdmin } = useAuth();
+  const [tab, setTab] = useState("membros");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -39,6 +43,18 @@ export default function FMembros() {
   }, [isConselho]);
 
   if (!isConselho) return <p>Acesso restrito ao Conselho e Administradores.</p>;
+
+  if (tab === "grupos") {
+    return (
+      <div>
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+          <button onClick={() => setTab("membros")} className="btn btn-secondary" style={{ fontSize: "0.85rem" }}>Membros</button>
+          <button className="btn btn-primary" style={{ fontSize: "0.85rem" }}>Grupos</button>
+        </div>
+        <FGruposAdmin />
+      </div>
+    );
+  }
 
   const byGroup = GROUPS.map((g) => ({
     ...g,
@@ -60,9 +76,16 @@ export default function FMembros() {
   return (
     <div>
       <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Filhos da Casa</h1>
-      <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+      <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1rem" }}>
         {users.length} membros registrados · agrupados por perfil
       </p>
+
+      {isAdmin && (
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+          <button className="btn btn-primary" style={{ fontSize: "0.85rem" }}>Membros</button>
+          <button onClick={() => setTab("grupos")} className="btn btn-secondary" style={{ fontSize: "0.85rem" }}>Grupos</button>
+        </div>
+      )}
 
       {loading ? (
         <p style={{ color: "#888" }}>Carregando...</p>
