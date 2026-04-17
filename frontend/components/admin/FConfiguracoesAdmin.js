@@ -1,14 +1,17 @@
 // ========================================
 // components/admin/FConfiguracoesAdmin.js
 // [F = Frontend Component]
-// Configurações do sistema — Permissões (real) + Notificações + Segurança
+// Configurações do sistema — Permissões + Notificações por perfil
 // ========================================
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/lib/LAuthContext";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/LFirebase";
+import { ROLES } from "@/lib/LPermissions";
 
 const FPermissoesAdmin = dynamic(() => import("@/components/admin/FPermissoesAdmin"), { ssr: false });
 
@@ -20,12 +23,65 @@ const NOTIFICATION_TYPES = [
   { id: "system", label: "Sistema", desc: "Atualizações e manutenção" },
 ];
 
+const editableRoles = ROLES.filter((r) => r.value !== "tecnico");
+
+function buildDefaults() {
+  const d = {};
+  NOTIFICATION_TYPES.forEach((t) => {
+    d[t.id] = {};
+    editableRoles.forEach((r) => { d[t.id][r.value] = true; });
+  });
+  return d;
+}
+
 export default function FConfiguracoesAdmin() {
   const { isAdmin } = useAuth();
   const [tab, setTab] = useState("permissions");
-  const [notifSettings, setNotifSettings] = useState(
-    NOTIFICATION_TYPES.reduce((acc, t) => ({ ...acc, [t.id]: true }), {})
-  );
+  const [notifSettings, setNotifSettings] = useState(buildDefaults());
+  const [loadingNotif, setLoadingNotif] = useState(true);
+  const [savingNotif, setSavingNotif] = useState(false);
+  const [savedNotif, setSavedNotif] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const snap = await getDoc(doc(db, "config", "notificationSettings"));
+        if (snap.exists()) {
+          const data = snap.data();
+          setNotifSettings((prev) => {
+            const merged = { ...prev };
+            Object.keys(merged).forEach((typeId) => {
+              if (data[typeId]) merged[typeId] = { ...merged[typeId], ...data[typeId] };
+            });
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao carregar config de notificações:", err);
+      } finally {
+        setLoadingNotif(false);
+      }
+    }
+    load();
+  }, []);
+
+  async function toggleNotif(typeId, roleValue) {
+    const next = {
+      ...notifSettings,
+      [typeId]: { ...notifSettings[typeId], [roleValue]: !notifSettings[typeId]?.[roleValue] },
+    };
+    setNotifSettings(next);
+    setSavingNotif(true);
+    setSavedNotif(false);
+    try {
+      await setDoc(doc(db, "config", "notificationSettings"), next);
+      setSavedNotif(true);
+    } catch (err) {
+      console.error("Erro ao salvar:", err);
+    } finally {
+      setSavingNotif(false);
+    }
+  }
 
   if (!isAdmin) return null;
 
@@ -52,33 +108,60 @@ export default function FConfiguracoesAdmin() {
       {tab === "permissions" && <FPermissoesAdmin embedded />}
 
       {tab === "notifications" && (
-        <div className="card">
-          <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Tipos de notificação</h3>
-          {NOTIFICATION_TYPES.map(t => (
-            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div>
-                <p style={{ fontWeight: 600, fontSize: "0.9rem" }}>{t.label}</p>
-                <p style={{ color: "#888", fontSize: "0.8rem" }}>{t.desc}</p>
-              </div>
-              <label style={{ position: "relative", width: "44px", height: "24px", cursor: "pointer" }}>
-                <input type="checkbox" checked={notifSettings[t.id]} onChange={() => setNotifSettings(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
-                  style={{ opacity: 0, width: 0, height: 0, position: "absolute" }} />
-                <span style={{
-                  position: "absolute", inset: 0, borderRadius: "12px", transition: "background 0.2s",
-                  background: notifSettings[t.id] ? "var(--egbe-green)" : "#d1d5db",
-                }}>
-                  <span style={{
-                    position: "absolute", top: "2px", left: notifSettings[t.id] ? "22px" : "2px",
-                    width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.2s",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                  }} />
-                </span>
-              </label>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+            <p style={{ fontSize: "0.88rem", color: "#666" }}>Ative ou desative tipos de notificação por perfil.</p>
+            {savingNotif && <span style={{ fontSize: "0.78rem", color: "#888" }}>Salvando...</span>}
+            {!savingNotif && savedNotif && <span style={{ fontSize: "0.78rem", color: "var(--egbe-green)", fontWeight: 600 }}>✔ Salvo</span>}
+          </div>
+
+          {loadingNotif ? <p style={{ color: "#888" }}>Carregando...</p> : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem", background: "white", borderRadius: "12px", overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                <thead>
+                  <tr style={{ background: "#f9fafb" }}>
+                    <th style={{ padding: "0.75rem 1rem", textAlign: "left", fontWeight: 600, color: "#333" }}>Tipo</th>
+                    {editableRoles.map((r) => (
+                      <th key={r.value} style={{ padding: "0.75rem 0.5rem", textAlign: "center", fontWeight: 600, color: r.color, fontSize: "0.78rem", minWidth: "80px" }}>
+                        {r.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {NOTIFICATION_TYPES.map((t) => (
+                    <tr key={t.id} style={{ borderTop: "1px solid #f3f4f6" }}>
+                      <td style={{ padding: "0.75rem 1rem" }}>
+                        <p style={{ fontWeight: 600, fontSize: "0.88rem" }}>{t.label}</p>
+                        <p style={{ color: "#888", fontSize: "0.75rem" }}>{t.desc}</p>
+                      </td>
+                      {editableRoles.map((r) => {
+                        const active = notifSettings[t.id]?.[r.value] !== false;
+                        return (
+                          <td key={r.value} style={{ padding: "0.5rem", textAlign: "center" }}>
+                            <button
+                              onClick={() => toggleNotif(t.id, r.value)}
+                              style={{
+                                width: "32px", height: "32px", borderRadius: "8px", cursor: "pointer",
+                                border: `2px solid ${active ? r.color : "#d1d5db"}`,
+                                background: active ? r.color : "white",
+                                color: active ? "white" : "#d1d5db",
+                                fontSize: "0.85rem", fontWeight: 700, fontFamily: "inherit",
+                              }}
+                            >
+                              {active ? "✓" : ""}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
+          )}
         </div>
       )}
-
     </div>
   );
 }
