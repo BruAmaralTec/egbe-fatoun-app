@@ -1,5 +1,5 @@
 rules_version = '2';
-
+// Atualizado 2026-04-17 — settings legível por todos autenticados
 service cloud.firestore {
   match /databases/{database}/documents {
 

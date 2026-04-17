@@ -32,15 +32,15 @@ export default function FOseCalendar() {
   useEffect(() => {
     async function load() {
       const [daySnap, defSnap, cycSnap, oxSnap] = await Promise.all([
-        getDoc(doc(db, "settings", "oseData")),
-        getDoc(doc(db, "settings", "oseDefaults")),
-        getDoc(doc(db, "settings", "oseCycles")),
-        getDoc(doc(db, "settings", "oseOrixas")),
+        getDoc(doc(db, "settings", "oseData")).catch((e) => { console.warn("oseData:", e.message); return null; }),
+        getDoc(doc(db, "settings", "oseDefaults")).catch((e) => { console.warn("oseDefaults:", e.message); return null; }),
+        getDoc(doc(db, "settings", "oseCycles")).catch((e) => { console.warn("oseCycles:", e.message); return null; }),
+        getDoc(doc(db, "settings", "oseOrixas")).catch((e) => { console.warn("oseOrixas:", e.message); return null; }),
       ]);
-      if (daySnap.exists()) setDayOverrides(daySnap.data());
-      if (defSnap.exists()) setDefaults(defSnap.data());
-      if (cycSnap.exists()) setCycles(cycSnap.data());
-      if (oxSnap.exists() && oxSnap.data().list) setOrixas(oxSnap.data().list);
+      if (daySnap?.exists()) setDayOverrides(daySnap.data());
+      if (defSnap?.exists()) setDefaults(defSnap.data());
+      if (cycSnap?.exists()) setCycles(cycSnap.data());
+      if (oxSnap?.exists() && oxSnap.data().list) setOrixas(oxSnap.data().list);
     }
     load();
   }, []);
