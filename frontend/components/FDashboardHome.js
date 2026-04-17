@@ -8,17 +8,24 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/LAuthContext";
 import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { ROLES } from "@/lib/LPermissions";
 
 export default function FDashboardHome() {
-  const { profile, isAdmin } = useAuth();
+  const { profile, isAdmin, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAdmin && profile) {
+      router.replace("/dashboard/perfil");
+      return;
+    }
     if (!isAdmin) { setLoading(false); return; }
     async function load() {
       try {
@@ -80,18 +87,9 @@ export default function FDashboardHome() {
       }
     }
     load();
-  }, [isAdmin]);
+  }, [isAdmin, authLoading, profile, router]);
 
-  if (!isAdmin) {
-    return (
-      <div>
-        <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>
-          Àṣẹ, {profile?.communityName || profile?.displayName || "Visitante"}! 🙏
-        </h1>
-        <p style={{ color: "#666", fontSize: "0.95rem" }}>Bem-vinda(o) ao Ẹgbẹ́ Fátọ́ún</p>
-      </div>
-    );
-  }
+  if (!isAdmin) return null;
 
   const roleLabel = ROLES.find((r) => r.value === profile?.role)?.label || "Admin";
 
