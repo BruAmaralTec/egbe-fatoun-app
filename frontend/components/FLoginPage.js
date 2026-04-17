@@ -16,8 +16,6 @@ export default function FLoginPage() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [logoFailed, setLogoFailed] = useState(false);
-
   const { loginWithEmail, loginWithGoogle, register } = useAuth();
   const router = useRouter();
 
@@ -67,26 +65,21 @@ export default function FLoginPage() {
       padding: "1.5rem",
     }}>
       <div style={{ width: "100%", maxWidth: "420px" }}>
-        {/* Logo + boas-vindas */}
+        {/* Título + traços rituais + boas-vindas */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          {!logoFailed && (
-            <img
-              src="/logo.jpeg"
-              alt="Ẹgbẹ́ Fátọ́ún"
-              onError={() => setLogoFailed(true)}
-              style={{ height: "120px", maxWidth: "100%", objectFit: "contain", marginBottom: "1rem" }}
-            />
-          )}
-          {logoFailed && (
-            <h1 style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "2rem",
-              color: "var(--egbe-yellow)",
-              marginBottom: "0.5rem",
-            }}>
-              Ẹgbẹ́ Fátọ́ún
-            </h1>
-          )}
+          <h1 style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "2rem",
+            color: "var(--egbe-yellow)",
+            marginBottom: "0.75rem",
+          }}>
+            Ẹgbẹ́ Fátọ́ún
+          </h1>
+          <div style={{ display: "flex", justifyContent: "center", gap: "4px", marginBottom: "1rem" }}>
+            {["#FAF9F6", "#1B6B3A", "#D4A017", "#B22222"].map((color) => (
+              <div key={color} style={{ width: "40px", height: "4px", borderRadius: "2px", background: color }} />
+            ))}
+          </div>
           <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1rem" }}>
             Bem-vinda(o) à casa
           </p>
