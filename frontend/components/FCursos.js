@@ -107,16 +107,14 @@ export default function FCursos() {
                 )}
 
                 {course.sacerdotisa && (
-                  <p style={{ fontSize: "0.82rem", color: "var(--egbe-green-dark)", marginBottom: "0.5rem", fontWeight: 500 }}>
+                  <p style={{ fontSize: "0.82rem", color: "var(--egbe-green-dark)", marginBottom: "0.25rem", fontWeight: 500 }}>
                     🙏 Com {course.sacerdotisa}
                   </p>
                 )}
 
-                {plain && (
-                  <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.75rem", flex: 1 }}>
-                    {plain.length > 150 ? plain.slice(0, 150) + "..." : plain}
-                  </p>
-                )}
+                <Link href={`/dashboard/cursos/${course.id}`} style={{ fontSize: "0.82rem", color: "var(--egbe-green)", fontWeight: 600, textDecoration: "none", marginBottom: "0.5rem", display: "inline-block" }}>
+                  + detalhes
+                </Link>
 
                 <div style={{ fontSize: "0.82rem", color: "#888", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                   {agenda && <span>📅 {agenda}</span>}
@@ -133,26 +131,17 @@ export default function FCursos() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem", flexWrap: "wrap" }}>
-                  <Link
-                    href={`/dashboard/cursos/${course.id}`}
-                    className="btn btn-secondary"
-                    style={{ textDecoration: "none", flex: 1, justifyContent: "center", minWidth: "120px" }}
+                {course.paymentLink && course.status !== "finished" && (
+                  <a
+                    href={course.paymentLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    style={{ marginTop: "0.75rem", textDecoration: "none", textAlign: "center", justifyContent: "center", width: "100%" }}
                   >
-                    Ver detalhes
-                  </Link>
-                  {course.paymentLink && course.status !== "finished" && (
-                    <a
-                      href={course.paymentLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary"
-                      style={{ textDecoration: "none", flex: 1, justifyContent: "center", minWidth: "120px" }}
-                    >
-                      Comprar curso ↗
-                    </a>
-                  )}
-                </div>
+                    Comprar curso ↗
+                  </a>
+                )}
               </div>
             );
           })}
