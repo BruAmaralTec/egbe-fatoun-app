@@ -167,21 +167,29 @@ export default function FCursoDetalhe() {
         </div>
       )}
 
-      {/* Módulos */}
+      {/* Módulos — sempre abertos, título + descrição */}
       {(course.modules?.length || 0) > 0 && (
         <div className="card" style={{ marginBottom: "1rem" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "0.75rem" }}>📚 Módulos</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {course.modules.map((m, i) => (
-              <div key={m.id || i} style={{ padding: "0.9rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-                <h3 style={{ fontSize: "1rem", marginBottom: "0.4rem", color: "var(--egbe-green-dark)" }}>
-                  {i + 1}. {m.title || "Sem título"}
-                </h3>
-                {m.description && (
-                  <div className="rich-editor-content" style={{ fontSize: "0.88rem", lineHeight: 1.6, color: "#555" }} dangerouslySetInnerHTML={{ __html: m.description }} />
-                )}
-              </div>
-            ))}
+          <h2 style={{ fontSize: "1.2rem", marginBottom: "1rem" }}>📚 Módulos</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {course.modules.map((m, i) => {
+              const descText = m.description ? m.description.replace(/<[^>]*>/g, "").trim() : "";
+              return (
+                <div key={m.id || i} style={{ padding: "1rem 1.1rem", background: "#f9fafb", borderRadius: "10px", border: "1px solid #e5e7eb", borderLeft: "4px solid var(--egbe-green)" }}>
+                  <h3 style={{ fontSize: "1.05rem", marginBottom: "0.5rem", color: "var(--egbe-green-dark)" }}>
+                    {i + 1}. {m.title || "Sem título"}
+                  </h3>
+                  {descText ? (
+                    <div
+                      style={{ fontSize: "0.9rem", lineHeight: 1.65, color: "#333" }}
+                      dangerouslySetInnerHTML={{ __html: m.description }}
+                    />
+                  ) : (
+                    <p style={{ fontSize: "0.82rem", color: "#aaa", fontStyle: "italic" }}>Descrição do módulo ainda não cadastrada.</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
