@@ -3,6 +3,7 @@
 // [F = Frontend Component]
 // Biblioteca de materiais — PDF, Word, PPT,
 // links, imagens, áudio, vídeo
+// Controle de acesso: multi-select perfis + usuários
 // ========================================
 
 "use client";
@@ -14,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import FRichTextEditor from "@/components/FRichTextEditor";
+import { ROLES } from "@/lib/LPermissions";
 
 const FILE_TYPES = [
   { value: "pdf", label: "PDF", icon: "📄", color: "#B22222", bg: "#fde8e8" },
@@ -27,16 +29,48 @@ const FILE_TYPES = [
 
 const CATEGORIES = ["Todos", "Oríkì", "Ìtàn", "Odù", "Èwé", "Cursos", "Geral"];
 
+const EMPTY_FORM = { title: "", description: "", url: "", type: "pdf", category: "Geral", accessRoles: [], accessUsers: [] };
+
+// Mapeamento de legacy access field → roles equivalentes
+const LEGACY_ACCESS = {
+  all: null, // sem restrição
+  filho: ["filho", "conselho", "sacerdote", "tecnico", "midias"],
+  conselho: ["conselho", "sacerdote", "tecnico"],
+  admin: ["sacerdote", "tecnico"],
+};
+
+function userCanAccess(item, profile, uid) {
+  if (!profile) return false;
+  if (profile.role === "tecnico" || profile.role === "sacerdote") return true;
+
+  // Legacy single-select field
+  if (item.access) {
+    if (item.access === "all") return true;
+    const legacyRoles = LEGACY_ACCESS[item.access];
+    return legacyRoles?.includes(profile.role) ?? true;
+  }
+
+  // Novos campos
+  const hasRoles = item.accessRoles?.length > 0;
+  const hasUsers = item.accessUsers?.length > 0;
+  if (!hasRoles && !hasUsers) return true;
+  if (item.accessUsers?.includes(uid)) return true;
+  if (item.accessRoles?.includes(profile.role)) return true;
+  return false;
+}
+
 export default function FBiblioteca() {
-  const { isAdmin } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [items, setItems] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("Todos");
   const [filterCat, setFilterCat] = useState("Todos");
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", url: "", type: "pdf", category: "Geral", access: "all" });
+  const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -48,13 +82,25 @@ export default function FBiblioteca() {
     load();
   }, []);
 
+  // Admin só: carrega lista de usuários pra seleção
+  useEffect(() => {
+    if (!isAdmin) return;
+    async function loadUsers() {
+      const snap = await getDocs(collection(db, "users"));
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }
+    loadUsers();
+  }, [isAdmin]);
+
   async function handleAdd() {
     if (!form.title || !form.url) return alert("Título e URL são obrigatórios");
     setSaving(true);
     try {
-      const ref = await addDoc(collection(db, "library"), { ...form, createdAt: new Date() });
-      setItems(prev => [{ id: ref.id, ...form }, ...prev]);
-      setForm({ title: "", description: "", url: "", type: "pdf", category: "Geral", access: "all" });
+      const payload = { ...form, createdAt: new Date() };
+      const ref = await addDoc(collection(db, "library"), payload);
+      setItems(prev => [{ id: ref.id, ...payload }, ...prev]);
+      setForm({ ...EMPTY_FORM });
+      setUserSearch("");
       setShowAdd(false);
     } catch (err) { alert("Erro: " + err.message); }
     finally { setSaving(false); }
@@ -66,19 +112,46 @@ export default function FBiblioteca() {
     setItems(prev => prev.filter(i => i.id !== id));
   }
 
-  const filtered = items.filter(i => {
+  function toggleRole(role) {
+    setForm((f) => ({
+      ...f,
+      accessRoles: f.accessRoles.includes(role) ? f.accessRoles.filter((r) => r !== role) : [...f.accessRoles, role],
+    }));
+  }
+
+  function addUserId(id) {
+    setForm((f) => ({ ...f, accessUsers: f.accessUsers.includes(id) ? f.accessUsers : [...f.accessUsers, id] }));
+    setUserSearch("");
+  }
+  function removeUserId(id) {
+    setForm((f) => ({ ...f, accessUsers: f.accessUsers.filter((u) => u !== id) }));
+  }
+
+  const matchedUsers = userSearch
+    ? users.filter((u) =>
+        !form.accessUsers.includes(u.id) &&
+        (u.displayName?.toLowerCase().includes(userSearch.toLowerCase()) ||
+         u.email?.toLowerCase().includes(userSearch.toLowerCase()))
+      ).slice(0, 6)
+    : [];
+
+  const visibleItems = items.filter((i) => userCanAccess(i, profile, user?.uid));
+
+  const filtered = visibleItems.filter(i => {
     const matchSearch = !search || i.title?.toLowerCase().includes(search.toLowerCase()) || i.description?.toLowerCase().includes(search.toLowerCase());
     const matchType = filterType === "Todos" || i.type === filterType;
     const matchCat = filterCat === "Todos" || i.category === filterCat;
     return matchSearch && matchType && matchCat;
   });
 
+  const isAccessPublic = form.accessRoles.length === 0 && form.accessUsers.length === 0;
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
         <div>
           <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Biblioteca</h1>
-          <p style={{ color: "#666", fontSize: "0.9rem" }}>{items.length} materiais disponíveis</p>
+          <p style={{ color: "#666", fontSize: "0.9rem" }}>{visibleItems.length} materiais disponíveis</p>
         </div>
         {isAdmin && (
           <button className="btn btn-primary" onClick={() => setShowAdd(!showAdd)}>
@@ -89,7 +162,7 @@ export default function FBiblioteca() {
 
       {/* Form adicionar */}
       {showAdd && isAdmin && (
-        <div className="card" style={{ marginBottom: "1.5rem", maxWidth: "700px" }}>
+        <div className="card" style={{ marginBottom: "1.5rem", maxWidth: "800px" }}>
           <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Novo material</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
             <div style={{ gridColumn: "1 / -1" }}>
@@ -112,21 +185,85 @@ export default function FBiblioteca() {
                 {CATEGORIES.filter(c => c !== "Todos").map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <div>
-              <label className="label">Acesso</label>
-              <select className="input-field" value={form.access} onChange={e => setForm({ ...form, access: e.target.value })}>
-                <option value="all">Todos os membros</option>
-                <option value="filho">Filhos da casa +</option>
-                <option value="conselho">Conselho +</option>
-                <option value="admin">Apenas admins</option>
-              </select>
-            </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label className="label">Descrição (opcional)</label>
               <FRichTextEditor value={form.description} onChange={(html) => setForm({ ...form, description: html })} placeholder="Breve descrição do material..." minHeight="100px" />
             </div>
           </div>
-          <button className="btn btn-primary" onClick={handleAdd} disabled={saving}>
+
+          {/* Controle de acesso */}
+          <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+            <label className="label" style={{ marginBottom: "0.5rem" }}>Acesso</label>
+            <p style={{ fontSize: "0.78rem", color: "#888", marginBottom: "0.75rem" }}>
+              {isAccessPublic ? "Todos os membros terão acesso." : `Restrito a ${form.accessRoles.length} perfil(is)${form.accessUsers.length > 0 ? ` + ${form.accessUsers.length} usuário(s)` : ""}.`}
+            </p>
+
+            <p style={{ fontSize: "0.78rem", color: "#666", marginBottom: "0.4rem", fontWeight: 600 }}>Perfis:</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "0.75rem" }}>
+              {ROLES.map((r) => {
+                const active = form.accessRoles.includes(r.value);
+                return (
+                  <button
+                    key={r.value}
+                    onClick={() => toggleRole(r.value)}
+                    style={{
+                      padding: "0.3rem 0.7rem",
+                      borderRadius: "20px",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      border: `1.5px solid ${r.color}`,
+                      background: active ? r.color : "white",
+                      color: active ? "white" : r.color,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {active && "✓ "}{r.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p style={{ fontSize: "0.78rem", color: "#666", marginBottom: "0.4rem", fontWeight: 600 }}>Usuários específicos:</p>
+            {form.accessUsers.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginBottom: "0.5rem" }}>
+                {form.accessUsers.map((uid) => {
+                  const u = users.find((x) => x.id === uid);
+                  return (
+                    <span key={uid} style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.25rem 0.6rem", background: "white", border: "1.5px solid var(--egbe-green)", borderRadius: "16px", fontSize: "0.78rem", color: "var(--egbe-green-dark)" }}>
+                      {u?.displayName || u?.email || uid.slice(0, 6)}
+                      <button onClick={() => removeUserId(uid)} style={{ background: "none", border: "none", color: "var(--egbe-red)", cursor: "pointer", padding: 0, fontSize: "0.95rem", lineHeight: 1 }}>×</button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <div style={{ position: "relative" }}>
+              <input
+                className="input-field"
+                placeholder="Buscar usuário por nome ou email..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                style={{ fontSize: "0.85rem" }}
+              />
+              {matchedUsers.length > 0 && (
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "white", border: "1px solid #e5e7eb", borderRadius: "8px", marginTop: "2px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 10, maxHeight: "200px", overflowY: "auto" }}>
+                  {matchedUsers.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => addUserId(u.id)}
+                      style={{ display: "block", width: "100%", textAlign: "left", padding: "0.5rem 0.75rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.82rem", borderBottom: "1px solid #f3f4f6", fontFamily: "inherit" }}
+                    >
+                      <strong>{u.displayName || "—"}</strong>
+                      <span style={{ color: "#888" }}> · {u.email}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button className="btn btn-primary" onClick={handleAdd} disabled={saving} style={{ marginTop: "1rem" }}>
             {saving ? "Salvando..." : "Adicionar"}
           </button>
         </div>
