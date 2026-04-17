@@ -170,7 +170,7 @@ export default function FPerfil() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         {/* Dados pessoais */}
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
@@ -262,8 +262,18 @@ export default function FPerfil() {
           )}
         </div>
 
+        {/* Mutirão de Ọ̀sẹ̀ */}
+        {profile.mutiraoGrupo && (
+          <div className="card" style={{ maxWidth: "500px" }}>
+            <h3 style={{ fontSize: "1.05rem", marginBottom: "0.5rem" }}>Mutirão de Ọ̀sẹ̀</h3>
+            <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "0.25rem" }}>
+              Grupo: <strong>{profile.mutiraoGrupo === "grupo1" ? "Mutirão Grupo 1" : "Mutirão Grupo 2"}</strong>
+            </p>
+          </div>
+        )}
+
         {/* Iniciações */}
-        <div className="card">
+        <div className="card" style={{ maxWidth: "500px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <h3 style={{ fontSize: "1.05rem", margin: 0 }}>Iniciações</h3>
             {isAdmin && editing && (
@@ -319,7 +329,7 @@ export default function FPerfil() {
         </div>
 
         {/* Cargos recebidos */}
-        <div className="card">
+        <div className="card" style={{ maxWidth: "500px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <h3 style={{ fontSize: "1.05rem", margin: 0 }}>Cargos recebidos</h3>
             {isAdmin && editing && (

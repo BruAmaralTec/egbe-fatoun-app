@@ -57,7 +57,7 @@ export default function FUsuariosAdmin() {
       displayName: user.displayName || "", communityName: user.communityName || "",
       email: user.email || "",
       cpf: user.cpf || "", phone: user.phone || "",
-      role: user.role || "cliente", oruko: user.oruko || "",
+      role: user.role || "cliente", oruko: user.oruko || "", mutiraoGrupo: user.mutiraoGrupo || "",
       initiacoes: user.initiacoes || [],
       cargos: user.cargos || [],
       observacoes: user.observacoes || "",
@@ -167,7 +167,7 @@ export default function FUsuariosAdmin() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.88rem", background: "white", borderRadius: "12px", overflow: "hidden", border: "1px solid #e5e7eb" }}>
             <thead>
               <tr style={{ background: "#f9fafb" }}>
-                {["Nome", "Email", "CPF", "Orúkọ", "Perfil", "Ações"].map((h) => (
+                {["Nome", "Email", "CPF", "Orúkọ", "Perfil", "Mutirão", "Ações"].map((h) => (
                   <th key={h} style={{ padding: "0.75rem 1rem", textAlign: "left", fontWeight: 600, color: "#666", borderBottom: "1px solid #e5e7eb", fontSize: "0.8rem" }}>{h}</th>
                 ))}
               </tr>
@@ -180,6 +180,7 @@ export default function FUsuariosAdmin() {
                   <td style={{ padding: "0.75rem 1rem", fontFamily: "monospace", fontSize: "0.82rem" }}>{user.cpf || "—"}</td>
                   <td style={{ padding: "0.75rem 1rem", fontStyle: user.oruko ? "normal" : "italic", color: user.oruko ? "var(--egbe-green-dark)" : "#ccc" }}>{user.oruko || "Não atribuído"}</td>
                   <td style={{ padding: "0.75rem 1rem" }}><span className={`badge badge-${user.role || "cliente"}`}>{ROLES.find((r) => r.value === user.role)?.label || user.role}</span></td>
+                  <td style={{ padding: "0.75rem 1rem", fontSize: "0.78rem", color: user.mutiraoGrupo ? "#1B6B3A" : "#ccc" }}>{user.mutiraoGrupo === "grupo1" ? "Grupo 1" : user.mutiraoGrupo === "grupo2" ? "Grupo 2" : "—"}</td>
                   <td style={{ padding: "0.75rem 1rem" }}>
                     <div style={{ display: "flex", gap: "0.4rem" }}>
                       <button onClick={() => openEdit(user)} style={{ padding: "0.3rem 0.7rem", background: "none", border: "1.5px solid var(--egbe-green)", borderRadius: "4px", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>Editar</button>
@@ -210,7 +211,10 @@ export default function FUsuariosAdmin() {
               <div><label className="label">CPF</label><input className="input-field" value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" /></div>
               <div><label className="label">Telefone</label><input className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(00) 00000-0000" /></div>
             </div>
-            <div style={{ marginBottom: "1rem" }}><label className="label">Perfil de acesso</label><select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>{ROLES.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}</select></div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
+              <div><label className="label">Perfil de acesso</label><select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>{ROLES.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}</select></div>
+              <div><label className="label">Mutirão de Ọ̀sẹ̀</label><select className="input-field" value={form.mutiraoGrupo || ""} onChange={(e) => setForm({ ...form, mutiraoGrupo: e.target.value })}><option value="">Sem grupo</option><option value="grupo1">Mutirão Grupo 1</option><option value="grupo2">Mutirão Grupo 2</option></select></div>
+            </div>
             <div style={{ marginBottom: "1rem" }}>
               <label className="label">Orúkọ (nome de iniciação)</label>
               <input className="input-field" value={form.oruko} onChange={(e) => setForm({ ...form, oruko: e.target.value })} placeholder="Nome atribuído na iniciação" />

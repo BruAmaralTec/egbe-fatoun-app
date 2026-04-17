@@ -8,14 +8,14 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { DEFAULT_ORIXAS, buildOrixaMaps, DEFAULT_CYCLES } from "@/lib/LOse";
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 export default function FOseCalendar() {
-  const { isAdmin } = useAuth();
+  const { user, profile, setProfile, isAdmin } = useAuth();
   const [curYear, setCurYear] = useState(new Date().getFullYear());
   const [curMonth, setCurMonth] = useState(new Date().getMonth());
   const [selDay, setSelDay] = useState(null);
@@ -160,6 +160,75 @@ export default function FOseCalendar() {
           </p>
         )}
       </div>
+
+      {/* Mutirão de Ọ̀sẹ̀ — se o usuário tem grupo e é dia de ọ̀sẹ̀ */}
+      {profile?.mutiraoGrupo && todayOrixas.length > 0 && (() => {
+        const rsvpKey = `${todayY}-${todayM}-${todayD}`;
+        const rsvp = profile.mutiraoRsvp?.[rsvpKey];
+        const hasResponded = rsvp?.confirmed === true || rsvp?.confirmed === false;
+
+        async function handleRsvp(confirmed) {
+          const newRsvp = { ...profile.mutiraoRsvp, [rsvpKey]: { confirmed, motivo: rsvp?.motivo || "", respondedAt: new Date().toISOString() } };
+          setProfile({ ...profile, mutiraoRsvp: newRsvp });
+          try { await updateDoc(doc(db, "users", user.uid), { mutiraoRsvp: newRsvp }); } catch {}
+        }
+
+        async function handleMotivo(motivo) {
+          const newRsvp = { ...profile.mutiraoRsvp, [rsvpKey]: { ...rsvp, motivo } };
+          setProfile({ ...profile, mutiraoRsvp: newRsvp });
+          try { await updateDoc(doc(db, "users", user.uid), { mutiraoRsvp: newRsvp }); } catch {}
+        }
+
+        return (
+          <div className="card" style={{ marginBottom: "1.25rem", borderLeft: "4px solid #D4A017", background: "#fffbeb" }}>
+            <h3 style={{ fontSize: "1.05rem", color: "#92400e", marginBottom: "0.4rem" }}>Mutirão de Ọ̀sẹ̀ na Ẹgbẹ́</h3>
+            <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "0.25rem" }}>
+              {todayD} de {MONTHS[todayM]} de {todayY} · {profile.mutiraoGrupo === "grupo1" ? "Mutirão Grupo 1" : "Mutirão Grupo 2"}
+            </p>
+            <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "0.75rem" }}>
+              Você está convocado para estar na Ẹgbẹ́ ajudando nas atividades.
+            </p>
+            <p style={{ fontSize: "0.88rem", fontWeight: 600, color: "#333", marginBottom: "0.5rem" }}>Você poderá comparecer?</p>
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+              <button
+                onClick={() => handleRsvp(true)}
+                style={{
+                  padding: "0.4rem 1rem", borderRadius: "8px", fontFamily: "inherit", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
+                  background: rsvp?.confirmed === true ? "#22c55e" : "white", color: rsvp?.confirmed === true ? "white" : "#22c55e",
+                  border: "2px solid #22c55e",
+                }}
+              >
+                {rsvp?.confirmed === true ? "✓ " : ""}Sim
+              </button>
+              <button
+                onClick={() => handleRsvp(false)}
+                style={{
+                  padding: "0.4rem 1rem", borderRadius: "8px", fontFamily: "inherit", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
+                  background: rsvp?.confirmed === false ? "#ef4444" : "white", color: rsvp?.confirmed === false ? "white" : "#ef4444",
+                  border: "2px solid #ef4444",
+                }}
+              >
+                {rsvp?.confirmed === false ? "✓ " : ""}Não
+              </button>
+            </div>
+            {rsvp?.confirmed === false && (
+              <div>
+                <label style={{ fontSize: "0.82rem", color: "#888", display: "block", marginBottom: "0.25rem" }}>Motivo:</label>
+                <input
+                  className="input-field"
+                  value={rsvp?.motivo || ""}
+                  onChange={(e) => handleMotivo(e.target.value)}
+                  placeholder="Informe o motivo..."
+                  style={{ fontSize: "0.85rem" }}
+                />
+              </div>
+            )}
+            {hasResponded && rsvp?.confirmed && (
+              <p style={{ fontSize: "0.82rem", color: "#22c55e", fontWeight: 600 }}>✓ Presença confirmada. Àṣẹ!</p>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Filtro de tempo — primeiro */}
       <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
