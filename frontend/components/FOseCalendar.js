@@ -47,6 +47,18 @@ export default function FOseCalendar() {
 
   const { colors: ORIXA_COLOR, bgs: ORIXA_BG } = buildOrixaMaps(orixas);
 
+  // Drill-down: Òrìṣà disponíveis limitam-se aos ciclos selecionados
+  const availableOrixas = cycleFilters.length === 0
+    ? orixas
+    : orixas.filter((o) => cycleFilters.some((cid) => (cycles[cid]?.orixas || []).includes(o.name)));
+
+  // Limpa seleção de Òrìṣà que saíram do drill-down
+  useEffect(() => {
+    const names = availableOrixas.map((o) => o.name);
+    setFilters((prev) => prev.filter((f) => names.includes(f)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cycleFilters, cycles, orixas]);
+
   function inTimeFilter(date) {
     const t0 = new Date();
     t0.setHours(0, 0, 0, 0);
@@ -283,48 +295,10 @@ export default function FOseCalendar() {
         </div>
       )}
 
-      {/* Filtros embaixo do calendário */}
+      {/* Filtros drill-down embaixo do calendário: Ciclo primeiro, Òrìṣà narrowed */}
       <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Òrìṣà</span>
-          {filters.length > 0 && (
-            <button onClick={() => setFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
-              Limpar ({filters.length})
-            </button>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          {orixas.map(({ name, color }) => {
-            const active = filters.includes(name);
-            return (
-              <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
-                <span style={{
-                  width: "18px", height: "18px", borderRadius: "50%",
-                  border: `2px solid ${color}`,
-                  background: active ? color : "white",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={() => setFilters(active ? filters.filter((f) => f !== name) : [...filters, name])}
-                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
-                />
-                <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
-                  {name}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Ciclo</span>
+          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>1. Filtrar por Ciclo</span>
           {cycleFilters.length > 0 && (
             <button onClick={() => setCycleFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
               Limpar ({cycleFilters.length})
@@ -354,6 +328,55 @@ export default function FOseCalendar() {
                 />
                 <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
                   {c.name}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>
+            2. Filtrar por Òrìṣà
+            {cycleFilters.length > 0 && (
+              <span style={{ color: "#aaa", fontWeight: 500, marginLeft: "0.4rem" }}>
+                (apenas dos ciclos selecionados)
+              </span>
+            )}
+          </span>
+          {filters.length > 0 && (
+            <button onClick={() => setFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
+              Limpar ({filters.length})
+            </button>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          {availableOrixas.length === 0 ? (
+            <span style={{ fontSize: "0.82rem", color: "#aaa", fontStyle: "italic" }}>
+              Nenhum Òrìṣà nos ciclos selecionados.
+            </span>
+          ) : availableOrixas.map(({ name, color }) => {
+            const active = filters.includes(name);
+            return (
+              <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
+                <span style={{
+                  width: "18px", height: "18px", borderRadius: "50%",
+                  border: `2px solid ${color}`,
+                  background: active ? color : "white",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => setFilters(active ? filters.filter((f) => f !== name) : [...filters, name])}
+                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                />
+                <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
+                  {name}
                 </span>
               </label>
             );
