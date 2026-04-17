@@ -65,5 +65,16 @@ service cloud.firestore {
       allow read, write: if isAuth() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tecnico";
     }
+
+    // Biblioteca: todos autenticados leem (filtragem por access é no cliente); admin escreve
+    match /library/{itemId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Rituais (consultas e obrigações): conselho/sacerdote/tecnico
+    match /rituals/{ritualId} {
+      allow read, write: if isConselho();
+    }
   }
 }
