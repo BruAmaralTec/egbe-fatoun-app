@@ -10,12 +10,14 @@ import { useState, useEffect } from "react";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import { ROLES } from "@/lib/LPermissions";
 import { DEFAULT_ORIXAS } from "@/lib/LOse";
 import { pushSupported, pushPermission, registerDevice } from "@/lib/LPush";
 
 export default function FPerfil() {
   const { user, profile, setProfile } = useAuth();
+  const { showAlert } = useModal();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({});
@@ -47,7 +49,7 @@ export default function FPerfil() {
     try {
       await registerDevice(user.uid);
       setPushState({ supported: true, permission: "granted" });
-      alert("Notificações push ativadas neste dispositivo!");
+      await showAlert("Notificações push ativadas neste dispositivo!");
     } catch (err) {
       setPushError(err.message);
     } finally {
@@ -64,7 +66,7 @@ export default function FPerfil() {
       await updateDoc(doc(db, "users", user.uid), { oseOrixasNotify: next });
     } catch (err) {
       setProfile({ ...profile, oseOrixasNotify: current });
-      alert("Erro ao salvar. Tente novamente.");
+      await showAlert("Erro ao salvar. Tente novamente.");
     } finally {
       setSavingNotify(false);
     }
@@ -100,7 +102,7 @@ export default function FPerfil() {
       setEditing(false);
     } catch (err) {
       console.error("Erro ao salvar perfil:", err);
-      alert("Erro ao salvar. Tente novamente.");
+      await showAlert("Erro ao salvar. Tente novamente.");
     } finally {
       setSaving(false);
     }

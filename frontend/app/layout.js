@@ -5,6 +5,7 @@
 
 import "./globals.css";
 import { AuthProvider } from "@/lib/LAuthContext";
+import { ModalProvider } from "@/lib/LModalContext";
 
 export const metadata = {
   title: "Ẹgbẹ́ Fátọ́ún — Templo Religioso de Ìfá e Òrìṣà",
@@ -28,7 +29,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <ModalProvider><AuthProvider>{children}</AuthProvider></ModalProvider>
       </body>
     </html>
   );

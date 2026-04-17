@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
@@ -27,6 +28,7 @@ const INTEGRATIONS = [
 
 export default function FIntegracoesAdmin() {
   const { profile, isAdmin } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const router = useRouter();
   const [integrations, setIntegrations] = useState({});
   const [editing, setEditing] = useState(null);
@@ -55,7 +57,7 @@ export default function FIntegracoesAdmin() {
       await setDoc(doc(db, "settings", "integrations"), updated);
       setIntegrations(updated);
       setEditing(null);
-    } catch (err) { alert("Erro: " + err.message); }
+    } catch (err) { await showAlert("Erro: " + err.message); }
     finally { setSaving(false); }
   }
 
@@ -68,7 +70,7 @@ export default function FIntegracoesAdmin() {
   }
 
   async function handleDisconnect(id) {
-    if (!confirm("Remover credenciais?")) return;
+    if (!(await showConfirm("Remover credenciais?"))) return;
     const updated = { ...integrations };
     delete updated[id];
     await setDoc(doc(db, "settings", "integrations"), updated);

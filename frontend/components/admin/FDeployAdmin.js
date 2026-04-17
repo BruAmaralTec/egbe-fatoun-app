@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
@@ -133,6 +134,7 @@ service firebase.storage {
 
 export default function FDeployAdmin() {
   const { profile, isAdmin } = useAuth();
+  const { showAlert } = useModal();
   const router = useRouter();
 
   const [envVars, setEnvVars] = useState({});
@@ -162,7 +164,7 @@ export default function FDeployAdmin() {
       await setDoc(doc(db, "settings", "envVars"), { ...envVars, updatedAt: new Date().toISOString() });
       setLastSaved(new Date());
     } catch (err) {
-      alert("Erro ao salvar: " + err.message);
+      await showAlert("Erro ao salvar: " + err.message);
     } finally {
       setSaving(false);
     }

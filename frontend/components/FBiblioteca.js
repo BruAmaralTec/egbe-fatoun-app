@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import {
   collection, getDocs, addDoc, deleteDoc, doc, query, orderBy,
 } from "firebase/firestore";
@@ -61,6 +62,7 @@ function userCanAccess(item, profile, uid) {
 
 export default function FBiblioteca() {
   const { user, profile, isAdmin } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const [items, setItems] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export default function FBiblioteca() {
   }, [isAdmin]);
 
   async function handleAdd() {
-    if (!form.title || !form.url) return alert("Título e URL são obrigatórios");
+    if (!form.title || !form.url) return showAlert("Título e URL são obrigatórios");
     setSaving(true);
     try {
       const payload = { ...form, createdAt: new Date() };
@@ -102,12 +104,12 @@ export default function FBiblioteca() {
       setForm({ ...EMPTY_FORM });
       setUserSearch("");
       setShowAdd(false);
-    } catch (err) { alert("Erro: " + err.message); }
+    } catch (err) { await showAlert("Erro: " + err.message); }
     finally { setSaving(false); }
   }
 
   async function handleDelete(id) {
-    if (!confirm("Remover este material?")) return;
+    if (!(await showConfirm("Remover este material?"))) return;
     await deleteDoc(doc(db, "library", id));
     setItems(prev => prev.filter(i => i.id !== id));
   }

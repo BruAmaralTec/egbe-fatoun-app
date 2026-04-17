@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import FRichTextEditor from "@/components/FRichTextEditor";
@@ -144,6 +145,7 @@ function daysUntil(date) {
 
 export default function FRituaisAdmin() {
   const { isAdmin, isConselho } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,8 +187,8 @@ export default function FRituaisAdmin() {
   }
 
   async function handleSave() {
-    if (!form.userId) return alert("Escolha o usuário do ritual.");
-    if (!form.date) return alert("Informe a data.");
+    if (!form.userId) return showAlert("Escolha o usuário do ritual.");
+    if (!form.date) return showAlert("Informe a data.");
     setSaving(true);
     try {
       if (selectedId) {
@@ -201,14 +203,14 @@ export default function FRituaisAdmin() {
       }
       setView("list");
     } catch (err) {
-      alert("Erro ao salvar: " + err.message);
+      await showAlert("Erro ao salvar: " + err.message);
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm("Remover este ritual?")) return;
+    if (!(await showConfirm("Remover este ritual?"))) return;
     await deleteDoc(doc(db, "rituals", id));
     setEvents((prev) => prev.filter((e) => e.id !== id));
     setView("list");

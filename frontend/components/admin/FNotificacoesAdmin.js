@@ -13,6 +13,7 @@ import { collection, getDocs, query, orderBy, deleteDoc, doc, limit } from "fire
 import { db } from "@/lib/LFirebase";
 import { notifyUsers, notifyByRoles, notifyAll } from "@/lib/LNotifications";
 import { ROLES } from "@/lib/LPermissions";
+import { useModal } from "@/lib/LModalContext";
 
 const CATEGORIES = [
   { value: "system", label: "Sistema", icon: "⚙️" },
@@ -24,6 +25,7 @@ const CATEGORIES = [
 
 export default function FNotificacoesAdmin() {
   const { profile, isAdmin, isConselho } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const router = useRouter();
   const canAccess = isAdmin || isConselho;
 
@@ -74,7 +76,7 @@ export default function FNotificacoesAdmin() {
 
   async function handleSend() {
     if (!form.title || !form.message) {
-      alert("Preencha título e mensagem.");
+      await showAlert("Preencha título e mensagem.");
       return;
     }
     setSending(true);
@@ -83,10 +85,10 @@ export default function FNotificacoesAdmin() {
       if (target === "all") {
         await notifyAll(data);
       } else if (target === "roles") {
-        if (selectedRoles.length === 0) { alert("Selecione pelo menos um perfil."); setSending(false); return; }
+        if (selectedRoles.length === 0) { await showAlert("Selecione pelo menos um perfil."); setSending(false); return; }
         await notifyByRoles(selectedRoles, data);
       } else {
-        if (selectedUsers.length === 0) { alert("Selecione pelo menos um usuário."); setSending(false); return; }
+        if (selectedUsers.length === 0) { await showAlert("Selecione pelo menos um usuário."); setSending(false); return; }
         await notifyUsers(selectedUsers, data);
       }
       setSent(true);
@@ -95,14 +97,14 @@ export default function FNotificacoesAdmin() {
       setSelectedUsers([]);
       setTimeout(() => setSent(false), 3000);
     } catch (err) {
-      alert("Erro ao enviar: " + err.message);
+      await showAlert("Erro ao enviar: " + err.message);
     } finally {
       setSending(false);
     }
   }
 
   async function handleDeleteGroup(ids) {
-    if (!confirm(`Remover ${ids.length} notificação(ões)?`)) return;
+    if (!(await showConfirm(`Remover ${ids.length} notificação(ões)?`))) return;
     for (const id of ids) {
       await deleteDoc(doc(db, "notifications", id));
     }

@@ -8,11 +8,13 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import { collection, getDocs, addDoc, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 
 export default function FCertificadosAdmin() {
   const { isAdmin } = useAuth();
+  const { showAlert } = useModal();
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ studentName: "", oruko: "", courseName: "", hours: 24, date: new Date().toISOString().split("T")[0] });
@@ -42,7 +44,7 @@ export default function FCertificadosAdmin() {
   }
 
   async function handleGenerate() {
-    if (!form.studentName || !form.courseName) return alert("Nome do aluno e curso são obrigatórios");
+    if (!form.studentName || !form.courseName) return showAlert("Nome do aluno e curso são obrigatórios");
     setGenerating(true);
     const code = generateCode();
     const cert = { ...form, code, createdAt: new Date() };
@@ -50,7 +52,7 @@ export default function FCertificadosAdmin() {
       const ref = await addDoc(collection(db, "certificates"), cert);
       setCertificates(prev => [{ id: ref.id, ...cert }, ...prev]);
       setPreview(cert);
-    } catch (err) { alert("Erro: " + err.message); }
+    } catch (err) { await showAlert("Erro: " + err.message); }
     finally { setGenerating(false); }
   }
 

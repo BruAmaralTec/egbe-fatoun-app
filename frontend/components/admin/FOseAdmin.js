@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -22,6 +23,7 @@ function dayKey(y, m, d) { return `${y}-${m}-${d}`; }
 
 export default function FOseAdmin() {
   const { profile, isConselho } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const router = useRouter();
   const [tab, setTab] = useState("cycles");
   const [defaults, setDefaults] = useState({});
@@ -71,7 +73,7 @@ export default function FOseAdmin() {
       await setDoc(doc(db, "settings", "oseDefaults"), defaults);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) { alert("Erro: " + err.message); }
+    } catch (err) { await showAlert("Erro: " + err.message); }
     finally { setSaving(false); }
   }
 
@@ -79,7 +81,7 @@ export default function FOseAdmin() {
     setSaving(true);
     try {
       await setDoc(doc(db, "settings", "oseCycles"), next);
-    } catch (err) { alert("Erro ao salvar ciclos: " + err.message); }
+    } catch (err) { await showAlert("Erro ao salvar ciclos: " + err.message); }
     setSaving(false);
   }
 
@@ -108,8 +110,8 @@ export default function FOseAdmin() {
     saveCycles(next);
   }
 
-  function removeCycle(id) {
-    if (!confirm(`Remover o ciclo "${cycles[id]?.name}"?`)) return;
+  async function removeCycle(id) {
+    if (!(await showConfirm(`Remover o ciclo "${cycles[id]?.name}"?`))) return;
     const next = { ...cycles };
     delete next[id];
     setCycles(next);
@@ -124,15 +126,15 @@ export default function FOseAdmin() {
 
   async function resetKeys(keys, scopeLabel = "esse período") {
     if (keys.length === 0) {
-      alert(`Nenhuma customização para resetar em ${scopeLabel}.`);
+      await showAlert(`Nenhuma customização para resetar em ${scopeLabel}.`);
       return;
     }
-    if (!confirm(`Resetar ${keys.length} dia(s) customizado(s)?`)) return;
+    if (!(await showConfirm(`Resetar ${keys.length} dia(s) customizado(s)?`))) return;
     const updated = { ...dayOverrides };
     keys.forEach((k) => { delete updated[k]; });
     setDayOverrides(updated);
     await persistOverrides(updated);
-    alert(`${keys.length} dia(s) resetado(s).`);
+    await showAlert(`${keys.length} dia(s) resetado(s).`);
   }
 
   async function resetYear() {
@@ -143,10 +145,10 @@ export default function FOseAdmin() {
     await resetKeys(keys, `o ano de ${curYear}`);
   }
   async function resetPeriod() {
-    if (!resetStart || !resetEnd) { alert("Selecione as duas datas."); return; }
+    if (!resetStart || !resetEnd) { await showAlert("Selecione as duas datas."); return; }
     const start = new Date(resetStart + "T00:00:00").getTime();
     const end = new Date(resetEnd + "T00:00:00").getTime();
-    if (start > end) { alert("Data inicial deve ser anterior à final."); return; }
+    if (start > end) { await showAlert("Data inicial deve ser anterior à final."); return; }
     const keys = Object.keys(dayOverrides).filter((k) => {
       const [y, m, d] = k.split("-").map(Number);
       const t = new Date(y, m, d).getTime();
@@ -156,19 +158,19 @@ export default function FOseAdmin() {
   }
 
   async function generateCalendar() {
-    if (!genStart || !genEnd) { alert("Selecione as duas datas do período."); return; }
+    if (!genStart || !genEnd) { await showAlert("Selecione as duas datas do período."); return; }
     const start = new Date(genStart + "T00:00:00");
     const end = new Date(genEnd + "T00:00:00");
-    if (start > end) { alert("Data inicial deve ser anterior à final."); return; }
+    if (start > end) { await showAlert("Data inicial deve ser anterior à final."); return; }
 
     const validCycles = Object.values(cycles).filter((c) => c.startDate && c.cycleDays > 0 && (c.orixas || []).length > 0);
     if (validCycles.length === 0) {
-      alert("Nenhum ciclo válido. Configure na aba 'Ciclos de Ọ̀sẹ̀' com data inicial, período e Òrìṣà.");
+      await showAlert("Nenhum ciclo válido. Configure na aba 'Ciclos de Ọ̀sẹ̀' com data inicial, período e Òrìṣà.");
       return;
     }
 
     const totalDays = Math.floor((end - start) / 86400000) + 1;
-    if (!confirm(`Gerar calendário com ${validCycles.length} ciclo(s) para ${totalDays} dia(s)?\n\nIsso vai SOBRESCREVER as customizações existentes no período.`)) return;
+    if (!(await showConfirm(`Gerar calendário com ${validCycles.length} ciclo(s) para ${totalDays} dia(s)?\n\nIsso vai SOBRESCREVER as customizações existentes no período.`))) return;
 
     setGenerating(true);
     try {
@@ -191,9 +193,9 @@ export default function FOseAdmin() {
       }
       setDayOverrides(updated);
       await persistOverrides(updated);
-      alert(`Calendário gerado para ${totalDays} dia(s).`);
+      await showAlert(`Calendário gerado para ${totalDays} dia(s).`);
     } catch (err) {
-      alert("Erro ao gerar: " + err.message);
+      await showAlert("Erro ao gerar: " + err.message);
     } finally {
       setGenerating(false);
     }
@@ -205,7 +207,7 @@ export default function FOseAdmin() {
     setSaving(true);
     try {
       await setDoc(doc(db, "settings", "oseOrixas"), { list: next });
-    } catch (err) { alert("Erro: " + err.message); }
+    } catch (err) { await showAlert("Erro: " + err.message); }
     setSaving(false);
   }
 
@@ -224,7 +226,7 @@ export default function FOseAdmin() {
 
   async function removeOrixa(index) {
     const target = orixas[index];
-    if (!confirm(`Remover o Òrìṣà "${target.name}"?\n\nIsso também vai retirá-lo dos ciclos que o incluem.`)) return;
+    if (!(await showConfirm(`Remover o Òrìṣà "${target.name}"?\n\nIsso também vai retirá-lo dos ciclos que o incluem.`))) return;
     const next = orixas.filter((_, i) => i !== index);
     setOrixas(next);
     await saveOrixas(next);

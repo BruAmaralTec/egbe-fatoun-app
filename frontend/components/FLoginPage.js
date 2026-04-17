@@ -71,7 +71,7 @@ export default function FLoginPage() {
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           {!logoFailed && (
             <img
-              src="/logo.png"
+              src="/logo.jpeg"
               alt="Ẹgbẹ́ Fátọ́ún"
               onError={() => setLogoFailed(true)}
               style={{ height: "120px", maxWidth: "100%", objectFit: "contain", marginBottom: "1rem" }}

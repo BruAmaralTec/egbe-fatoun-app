@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, where,
   serverTimestamp, orderBy as fbOrderBy,
@@ -39,6 +40,7 @@ function activeMembers(members = []) {
 
 export default function FGruposAdmin() {
   const { user, isConselho } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const [groups, setGroups] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -101,8 +103,8 @@ export default function FGruposAdmin() {
   }
 
   async function handleSave() {
-    if (!form.name) return alert("Informe o nome do grupo.");
-    if (!form.startDate) return alert("Informe a data de início.");
+    if (!form.name) return showAlert("Informe o nome do grupo.");
+    if (!form.startDate) return showAlert("Informe a data de início.");
     setSaving(true);
     try {
       const payload = { ...form };
@@ -117,14 +119,14 @@ export default function FGruposAdmin() {
       }
       setView("detail");
     } catch (err) {
-      alert("Erro ao salvar: " + err.message);
+      await showAlert("Erro ao salvar: " + err.message);
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm("Remover este grupo? O histórico de envios também é apagado.")) return;
+    if (!(await showConfirm("Remover este grupo? O histórico de envios também é apagado."))) return;
     await deleteDoc(doc(db, "groups", id));
     setGroups((prev) => prev.filter((g) => g.id !== id));
     setView("list");
@@ -336,6 +338,7 @@ function GroupForm({ form, setForm, users, userSearch, setUserSearch, saving, is
 // Detail + envio de notificação + histórico
 // ========================================
 function GroupDetail({ group, userById, currentUserUid, onBack, onEdit, onDelete }) {
+  const { showAlert } = useModal();
   const active = activeMembers(group.members);
   const [dispatches, setDispatches] = useState([]);
   const [loadingDispatches, setLoadingDispatches] = useState(true);
@@ -371,8 +374,8 @@ function GroupDetail({ group, userById, currentUserUid, onBack, onEdit, onDelete
   }
 
   async function handleSend() {
-    if (!sendTitle || !sendMessage) return alert("Informe título e mensagem.");
-    if (active.length === 0) return alert("Grupo não tem membros ativos.");
+    if (!sendTitle || !sendMessage) return showAlert("Informe título e mensagem.");
+    if (active.length === 0) return showAlert("Grupo não tem membros ativos.");
     setSending(true);
     try {
       const dispatchId = `disp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -407,7 +410,7 @@ function GroupDetail({ group, userById, currentUserUid, onBack, onEdit, onDelete
       setDispatches((prev) => [{ ...dispatchDoc, sentAt: new Date(), id: "local-" + dispatchId }, ...prev]);
       setSendTitle(""); setSendMessage(""); setRequiresConfirm(false);
     } catch (err) {
-      alert("Erro ao enviar: " + err.message);
+      await showAlert("Erro ao enviar: " + err.message);
     } finally {
       setSending(false);
     }

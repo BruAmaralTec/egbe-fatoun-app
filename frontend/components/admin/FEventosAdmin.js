@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import { useRouter } from "next/navigation";
 import {
   collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy,
@@ -40,6 +41,7 @@ const STATUS_OPTIONS = [
 
 export default function FEventosAdmin() {
   const { isAdmin } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const router = useRouter();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +66,7 @@ export default function FEventosAdmin() {
   function openEdit(event) { setEditing(event.id); setForm({ ...EMPTY_EVENT, ...event }); setTab("details"); }
 
   async function handleSave() {
-    if (!form.title) return alert("Título é obrigatório");
+    if (!form.title) return showAlert("Título é obrigatório");
     setSaving(true);
     try {
       const wasPublished = editing !== "new" && events.find((e) => e.id === editing)?.status === "published";
@@ -91,12 +93,12 @@ export default function FEventosAdmin() {
       }
 
       setEditing(null);
-    } catch (err) { alert("Erro: " + err.message); }
+    } catch (err) { await showAlert("Erro: " + err.message); }
     finally { setSaving(false); }
   }
 
   async function handleDelete(id) {
-    if (!confirm("Remover este evento?")) return;
+    if (!(await showConfirm("Remover este evento?"))) return;
     await deleteDoc(doc(db, "events", id));
     setEvents((prev) => prev.filter((e) => e.id !== id));
   }

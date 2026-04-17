@@ -17,9 +17,11 @@ import { deleteUser as apiDeleteUser } from "@/lib/LApi";
 import FRichTextEditor from "@/components/FRichTextEditor";
 
 import { ROLES } from "@/lib/LPermissions";
+import { useModal } from "@/lib/LModalContext";
 
 export default function FUsuariosAdmin() {
   const { profile, isAdmin } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const router = useRouter();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +72,7 @@ export default function FUsuariosAdmin() {
       await updateDoc(doc(db, "users", editing), { ...form, updatedAt: new Date() });
       setUsers((prev) => prev.map((u) => (u.id === editing ? { ...u, ...form } : u)));
       setEditing(null);
-    } catch (err) { alert("Erro ao salvar: " + err.message); }
+    } catch (err) { await showAlert("Erro ao salvar: " + err.message); }
     finally { setSaving(false); }
   }
 
@@ -93,8 +95,8 @@ export default function FUsuariosAdmin() {
 
   async function handleCreate() {
     const { displayName, email, password, role } = createForm;
-    if (!displayName || !email || !password) return alert("Preencha nome, email e senha.");
-    if (password.length < 6) return alert("Senha deve ter pelo menos 6 caracteres.");
+    if (!displayName || !email || !password) return showAlert("Preencha nome, email e senha.");
+    if (password.length < 6) return showAlert("Senha deve ter pelo menos 6 caracteres.");
     setCreateSaving(true);
     try {
       // Instância secundária pra não deslogar o admin
@@ -117,19 +119,19 @@ export default function FUsuariosAdmin() {
       setCreating(false);
     } catch (err) {
       const msg = err.code === "auth/email-already-in-use" ? "Este email já está cadastrado." : err.message;
-      alert("Erro ao criar: " + msg);
+      await showAlert("Erro ao criar: " + msg);
     } finally {
       setCreateSaving(false);
     }
   }
 
   async function handleDelete(userId) {
-    if (!confirm("Tem certeza que deseja remover este usuário? Esta ação remove também o login (Firebase Auth).")) return;
+    if (!(await showConfirm("Tem certeza que deseja remover este usuário? Esta ação remove também o login (Firebase Auth)."))) return;
     try {
       await apiDeleteUser(userId);
       setUsers((prev) => prev.filter((u) => u.id !== userId));
     } catch (err) {
-      alert("Erro ao remover usuário: " + (err.response?.data?.error || err.message));
+      await showAlert("Erro ao remover usuário: " + (err.response?.data?.error || err.message));
     }
   }
 

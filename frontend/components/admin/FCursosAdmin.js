@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
+import { useModal } from "@/lib/LModalContext";
 import {
   collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy,
 } from "firebase/firestore";
@@ -37,6 +38,7 @@ const STATUS_OPTIONS = [
 
 export default function FCursosAdmin() {
   const { isAdmin } = useAuth();
+  const { showAlert, showConfirm } = useModal();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -58,7 +60,7 @@ export default function FCursosAdmin() {
   }, [isAdmin]);
 
   async function handleSave() {
-    if (!form.title) return alert("Título é obrigatório");
+    if (!form.title) return showAlert("Título é obrigatório");
     setSaving(true);
     try {
       const prevStatus = editing !== "new" ? courses.find((c) => c.id === editing)?.status : null;
@@ -84,12 +86,12 @@ export default function FCursosAdmin() {
       }
 
       setEditing(null);
-    } catch (err) { alert("Erro: " + err.message); }
+    } catch (err) { await showAlert("Erro: " + err.message); }
     finally { setSaving(false); }
   }
 
   async function handleDelete(id) {
-    if (!confirm("Remover este curso?")) return;
+    if (!(await showConfirm("Remover este curso?"))) return;
     await deleteDoc(doc(db, "courses", id));
     setCourses((prev) => prev.filter((c) => c.id !== id));
   }
