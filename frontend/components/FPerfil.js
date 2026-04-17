@@ -6,17 +6,43 @@
 
 "use client";
 
-import { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import { useAuth } from "@/lib/LAuthContext";
 import { ROLES } from "@/lib/LPermissions";
+import { DEFAULT_ORIXAS } from "@/lib/LOse";
 
 export default function FPerfil() {
   const { user, profile, setProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({});
+  const [orixas, setOrixas] = useState(DEFAULT_ORIXAS);
+  const [savingNotify, setSavingNotify] = useState(false);
+
+  useEffect(() => {
+    async function loadOrixas() {
+      const snap = await getDoc(doc(db, "settings", "oseOrixas"));
+      if (snap.exists() && snap.data().list) setOrixas(snap.data().list);
+    }
+    loadOrixas();
+  }, []);
+
+  async function toggleOrixaNotify(name) {
+    const current = profile.oseOrixasNotify || [];
+    const next = current.includes(name) ? current.filter((o) => o !== name) : [...current, name];
+    setProfile({ ...profile, oseOrixasNotify: next });
+    setSavingNotify(true);
+    try {
+      await updateDoc(doc(db, "users", user.uid), { oseOrixasNotify: next });
+    } catch (err) {
+      setProfile({ ...profile, oseOrixasNotify: current });
+      alert("Erro ao salvar. Tente novamente.");
+    } finally {
+      setSavingNotify(false);
+    }
+  }
 
   if (!profile) return null;
 
@@ -207,6 +233,44 @@ export default function FPerfil() {
           <p style={{ fontSize: "0.75rem", color: "#aaa", marginTop: "0.5rem", fontStyle: "italic" }}>
             Cargos são atribuídos pelos administradores da casa.
           </p>
+        </div>
+      </div>
+
+      {/* Notificações de Ọ̀sẹ̀ por Òrìṣà */}
+      <div className="card" style={{ marginTop: "1rem" }}>
+        <h3 style={{ fontSize: "1.05rem", marginBottom: "0.25rem" }}>
+          Lembretes de ọ̀sẹ̀ {savingNotify && <span style={{ fontSize: "0.75rem", color: "#aaa", fontStyle: "italic", marginLeft: "0.5rem" }}>salvando…</span>}
+        </h3>
+        <p style={{ fontSize: "0.82rem", color: "#666", marginBottom: "0.75rem" }}>
+          Escolha os Òrìṣà que você deseja receber lembrete para fazer ọ̀sẹ̀.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem" }}>
+          {orixas.map(({ name, color }) => {
+            const active = (profile.oseOrixasNotify || []).includes(name);
+            return (
+              <button
+                key={name}
+                onClick={() => toggleOrixaNotify(name)}
+                disabled={savingNotify}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.35rem 0.75rem",
+                  borderRadius: "20px",
+                  border: `2px solid ${color}`,
+                  background: active ? color : "white",
+                  color: active ? "white" : color,
+                  fontWeight: 600,
+                  fontSize: "0.82rem",
+                  cursor: savingNotify ? "wait" : "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {active && "✓ "}{name}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
