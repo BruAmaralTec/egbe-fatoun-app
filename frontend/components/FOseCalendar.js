@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/LAuthContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
@@ -24,6 +24,8 @@ export default function FOseCalendar() {
   const [timeFilter, setTimeFilter] = useState("mes");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
+  const [showOrixaDropdown, setShowOrixaDropdown] = useState(false);
+  const orixaDropdownRef = useRef(null);
   const [dayOverrides, setDayOverrides] = useState({});
   const [defaults, setDefaults] = useState({});
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
@@ -59,12 +61,22 @@ export default function FOseCalendar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cycleFilters, cycles, orixas]);
 
+  // Fecha dropdown ao clicar fora
+  useEffect(() => {
+    function handler(e) {
+      if (orixaDropdownRef.current && !orixaDropdownRef.current.contains(e.target)) {
+        setShowOrixaDropdown(false);
+      }
+    }
+    if (showOrixaDropdown) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showOrixaDropdown]);
+
   function inTimeFilter(date) {
     const t0 = new Date();
     t0.setHours(0, 0, 0, 0);
     const d0 = new Date(date);
     d0.setHours(0, 0, 0, 0);
-    if (timeFilter === "hoje") return d0.getTime() === t0.getTime();
     if (timeFilter === "semana") {
       const day = t0.getDay() === 0 ? 6 : t0.getDay() - 1;
       const start = new Date(t0); start.setDate(t0.getDate() - day);
@@ -230,10 +242,73 @@ export default function FOseCalendar() {
         );
       })()}
 
-      {/* Filtro de tempo — primeiro */}
+      {/* Filtros no topo: Òrìṣà (drilldown multi) + período */}
       <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+        {/* Dropdown multi-select de Òrìṣà (respeita drilldown pelos ciclos) */}
+        <div ref={orixaDropdownRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowOrixaDropdown((s) => !s)}
+            className={`btn ${filters.length > 0 ? "btn-primary" : "btn-secondary"}`}
+            style={{ fontSize: "0.82rem", padding: "0.35rem 0.9rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
+          >
+            {filters.length === 0 ? "Filtrar Òrìṣà" : `Òrìṣà (${filters.length})`}
+            <span style={{ fontSize: "0.65rem", opacity: 0.8 }}>▼</span>
+          </button>
+          {showOrixaDropdown && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20,
+              minWidth: "240px", maxWidth: "320px", maxHeight: "320px", overflowY: "auto",
+              background: "white", border: "1px solid #e5e7eb", borderRadius: "8px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12)", padding: "0.6rem 0.75rem",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#888" }}>
+                  {cycleFilters.length > 0 ? "Dos ciclos selecionados" : "Todos os Òrìṣà"}
+                </span>
+                {filters.length > 0 && (
+                  <button onClick={() => setFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}>
+                    Limpar
+                  </button>
+                )}
+              </div>
+              {availableOrixas.length === 0 ? (
+                <span style={{ fontSize: "0.82rem", color: "#aaa", fontStyle: "italic" }}>
+                  Nenhum Òrìṣà nos ciclos selecionados.
+                </span>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                  {availableOrixas.map(({ name, color }) => {
+                    const active = filters.includes(name);
+                    return (
+                      <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", userSelect: "none" }}>
+                        <span style={{
+                          width: "18px", height: "18px", borderRadius: "50%",
+                          border: `2px solid ${color}`,
+                          background: active ? color : "white",
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          flexShrink: 0,
+                        }}>
+                          {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={active}
+                          onChange={() => setFilters(active ? filters.filter((f) => f !== name) : [...filters, name])}
+                          style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                        />
+                        <span style={{ fontSize: "0.85rem", color: active ? color : "#444", fontWeight: active ? 600 : 500 }}>
+                          {name}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {[
-          { id: "hoje", label: "Hoje" },
           { id: "semana", label: "Semana" },
           { id: "mes", label: "Mês" },
           { id: "periodo", label: "Período" },
@@ -242,7 +317,7 @@ export default function FOseCalendar() {
             key={opt.id}
             onClick={() => {
               setTimeFilter(opt.id);
-              if (opt.id === "hoje" || opt.id === "semana") {
+              if (opt.id === "semana") {
                 const now = new Date();
                 if (now.getMonth() !== curMonth || now.getFullYear() !== curYear) {
                   setCurMonth(now.getMonth());
@@ -425,10 +500,10 @@ export default function FOseCalendar() {
         </div>
       )}
 
-      {/* Filtros drill-down embaixo do calendário: Ciclo primeiro, Òrìṣà narrowed */}
+      {/* Filtro de Ciclo embaixo do calendário (bolinhas) */}
       <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>1. Filtrar por Ciclo</span>
+          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>Filtrar por Ciclo</span>
           {cycleFilters.length > 0 && (
             <button onClick={() => setCycleFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
               Limpar ({cycleFilters.length})
@@ -458,55 +533,6 @@ export default function FOseCalendar() {
                 />
                 <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
                   {c.name}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#666" }}>
-            2. Filtrar por Òrìṣà
-            {cycleFilters.length > 0 && (
-              <span style={{ color: "#aaa", fontWeight: 500, marginLeft: "0.4rem" }}>
-                (apenas dos ciclos selecionados)
-              </span>
-            )}
-          </span>
-          {filters.length > 0 && (
-            <button onClick={() => setFilters([])} style={{ background: "none", border: "none", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
-              Limpar ({filters.length})
-            </button>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          {availableOrixas.length === 0 ? (
-            <span style={{ fontSize: "0.82rem", color: "#aaa", fontStyle: "italic" }}>
-              Nenhum Òrìṣà nos ciclos selecionados.
-            </span>
-          ) : availableOrixas.map(({ name, color }) => {
-            const active = filters.includes(name);
-            return (
-              <label key={name} style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", userSelect: "none" }}>
-                <span style={{
-                  width: "18px", height: "18px", borderRadius: "50%",
-                  border: `2px solid ${color}`,
-                  background: active ? color : "white",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  {active && <span style={{ color: "white", fontSize: "0.7rem", fontWeight: 700 }}>✓</span>}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={() => setFilters(active ? filters.filter((f) => f !== name) : [...filters, name])}
-                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
-                />
-                <span style={{ fontSize: "0.82rem", color: active ? color : "#666", fontWeight: active ? 600 : 500 }}>
-                  {name}
                 </span>
               </label>
             );
