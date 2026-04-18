@@ -11,10 +11,11 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  linkWithCredential,
   GoogleAuthProvider,
   signOut,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "./LFirebase";
 
 // Contexto que qualquer componente pode acessar
@@ -52,15 +53,30 @@ export function AuthProvider({ children }) {
         if (profileDoc.exists()) {
           setProfile({ id: profileDoc.id, ...profileDoc.data() });
         } else {
-          // Primeiro acesso — cria perfil mínimo como "cliente"
-          const newProfile = {
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || "",
-            role: "cliente",
-            createdAt: new Date(),
-          };
-          await setDoc(doc(db, "users", firebaseUser.uid), newProfile);
-          setProfile({ id: firebaseUser.uid, ...newProfile });
+          // Caso: login com Google mas Firebase fundiu com conta de email existente
+          // (user já tem doc no Firestore com outro uid/mesmo email). Migra os dados.
+          let adopted = null;
+          if (firebaseUser.email) {
+            try {
+              const qs = await getDocs(query(collection(db, "users"), where("email", "==", firebaseUser.email)));
+              if (!qs.empty) adopted = { id: qs.docs[0].id, ...qs.docs[0].data() };
+            } catch (e) { console.warn("lookup users by email:", e.message); }
+          }
+          if (adopted) {
+            const { id, ...data } = adopted;
+            await setDoc(doc(db, "users", firebaseUser.uid), data, { merge: true });
+            setProfile({ id: firebaseUser.uid, ...data });
+          } else {
+            // Primeiro acesso de verdade — cria perfil mínimo como "cliente"
+            const newProfile = {
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || "",
+              role: "cliente",
+              createdAt: new Date(),
+            };
+            await setDoc(doc(db, "users", firebaseUser.uid), newProfile);
+            setProfile({ id: firebaseUser.uid, ...newProfile });
+          }
         }
       } else {
         setUser(null);
@@ -81,6 +97,15 @@ export function AuthProvider({ children }) {
   async function loginWithGoogle() {
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider);
+  }
+
+  // Vincula credencial do Google a uma conta já existente (email/senha).
+  // Uso: quando signInWithPopup(Google) lança auth/account-exists-with-different-credential,
+  // capturar GoogleAuthProvider.credentialFromError(err) e chamar isto com a senha informada.
+  async function linkGoogleToEmailPassword({ email, password, googleCredential }) {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    await linkWithCredential(cred.user, googleCredential);
+    return cred;
   }
 
   // Registro de novo usuário
@@ -128,6 +153,7 @@ export function AuthProvider({ children }) {
     isConselho,
     loginWithEmail,
     loginWithGoogle,
+    linkGoogleToEmailPassword,
     register,
     logout,
     getToken,
