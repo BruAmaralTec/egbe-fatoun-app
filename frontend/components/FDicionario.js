@@ -32,8 +32,11 @@ export default function FDicionario() {
   const [toLang, setToLang] = useState("yo");
   const [sourceText, setSourceText] = useState("");
   const [translation, setTranslation] = useState("");
+  const [provider, setProvider] = useState("");
   const [translating, setTranslating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
+
+  const involvesYoruba = fromLang === "yo" || toLang === "yo";
 
   function copyPhrase(phrase, index) {
     const yoruba = phrase.split(" — ")[0].normalize("NFC");
@@ -46,10 +49,12 @@ export default function FDicionario() {
     if (!sourceText.trim()) return;
     setTranslating(true);
     setTranslation("");
+    setProvider("");
     try {
       const data = await translateApi({ text: sourceText, sourceLang: fromLang, targetLang: toLang });
       const out = (data.translation || "Sem tradução.").normalize("NFC");
       setTranslation(out);
+      setProvider(data.provider || "");
     } catch (err) {
       const resp = err.response?.data;
       const detail = resp?.details || resp?.error || err.message;
@@ -64,6 +69,7 @@ export default function FDicionario() {
     setToLang(fromLang);
     setSourceText(translation);
     setTranslation(sourceText);
+    setProvider("");
   }
 
   return (
@@ -130,7 +136,7 @@ export default function FDicionario() {
         </div>
 
         <button onClick={handleTranslate} className="btn btn-primary" disabled={translating || !sourceText.trim()} style={{ width: "100%", justifyContent: "center", marginBottom: "1rem" }}>
-          {translating ? "Traduzindo..." : "Traduzir"}
+          {translating ? (involvesYoruba ? "Traduzindo (pode levar ~30s na 1ª chamada)..." : "Traduzindo...") : "Traduzir"}
         </button>
 
         {/* Resultado */}
@@ -147,10 +153,15 @@ export default function FDicionario() {
           )}
         </div>
 
-        {toLang === "yo" && translation && (
-          <p style={{ fontSize: "0.78rem", color: "#888", marginTop: "0.75rem", lineHeight: 1.5 }}>
-            ⚠️ O Google Translate para <strong>Yorùbá</strong> geralmente não inclui os pontos subscritos (<strong>ẹ</strong>/<strong>ọ</strong>/<strong>ṣ</strong>) — apenas os tons agudos e graves.
-            Para a grafia tradicional completa, ajuste manualmente ou consulte uma fonte litúrgica.
+        {provider && translation && (
+          <p style={{ fontSize: "0.75rem", color: "#888", marginTop: "0.75rem", lineHeight: 1.5 }}>
+            {provider === "nllb" ? (
+              <>🤖 Tradução via <strong>NLLB-200</strong> (Meta) — preserva a grafia Yorùbá com tons e pontos subscritos (ẹ/ọ/ṣ).</>
+            ) : provider === "google-fallback" ? (
+              <>⚠️ NLLB indisponível no momento — usado Google Translate como fallback (sem pontos subscritos).</>
+            ) : (
+              <>🌐 Tradução via Google Cloud Translation.</>
+            )}
           </p>
         )}
       </div>

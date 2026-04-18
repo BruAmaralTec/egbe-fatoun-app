@@ -1,6 +1,6 @@
 // ========================================
 // src/routes/BTranslate.js
-// Endpoint de tradução via Google Cloud Translation API (ADC)
+// Endpoint de tradução — roteia entre NLLB (yorùbá) e Google Cloud Translation
 // ========================================
 
 const { Router } = require("express");
