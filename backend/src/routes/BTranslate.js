@@ -1,6 +1,6 @@
 // ========================================
 // src/routes/BTranslate.js
-// Endpoint de tradução via SerpAPI
+// Endpoint de tradução via Google Cloud Translation API (ADC)
 // ========================================
 
 const { Router } = require("express");
@@ -23,8 +23,11 @@ router.post("/", verifyToken, async (req, res) => {
     const result = await translate.translate({ text, sourceLang, targetLang });
     res.json(result);
   } catch (error) {
-    console.error("Erro ao traduzir:", error.message, error.response?.data || "");
-    res.status(500).json({ error: error.message });
+    const gErr = error?.errors?.[0] || error?.response?.data?.error;
+    const reason = gErr?.reason || gErr?.status || "";
+    const msg = gErr?.message || error.message;
+    console.error("Erro ao traduzir:", msg, reason || "");
+    res.status(error.code || 500).json({ error: msg, details: reason });
   }
 });
 

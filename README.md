@@ -68,8 +68,7 @@ gcloud run deploy egbe-payments \
 - **Sympla** — Inscrições em eventos
 - **StreamYard** — Transmissão de cursos
 - **YouTube** — Gravações de cursos
-- **Google Translate** — Dicionário PT↔ES↔Yorùbá↔EN
-- **SerpAPI** — Busca avançada
+- **Google Cloud Translation API** — Dicionário PT↔ES↔Yorùbá↔EN↔FR (ADC do Cloud Run)
 
 Todas as integrações são gerenciadas pela tela do Técnico em `/dashboard/admin/integracoes`.
 

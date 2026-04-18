@@ -72,7 +72,7 @@ export async function deleteUser(uid) {
 }
 
 // ----------------------------------------
-// TRADUÇÃO (SerpAPI)
+// TRADUÇÃO (Google Cloud Translation API)
 // ----------------------------------------
 
 export async function translate({ text, sourceLang, targetLang }) {

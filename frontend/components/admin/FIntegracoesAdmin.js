@@ -2,8 +2,8 @@
 // components/admin/FIntegracoesAdmin.js
 // [F = Frontend Component]
 // Painel de Integrações — Asaas, Nuvemshop,
-// Sympla, StreamYard, YouTube, Google Translate,
-// SerpAPI, Firebase
+// Sympla, StreamYard, YouTube, Firebase, Autentique
+// (Tradução usa Google Cloud Translation via ADC — não exige API key)
 // ========================================
 
 "use client";
@@ -21,7 +21,6 @@ const INTEGRATIONS = [
   { id: "sympla", name: "Sympla", description: "Inscrições em eventos e cursos", category: "Eventos", docsUrl: "https://developers.sympla.com.br", fields: [{ key: "apiToken", label: "API Token", type: "password" }], color: "#FF6B35" },
   { id: "streamyard", name: "StreamYard", description: "Transmissão ao vivo dos cursos", category: "Cursos", docsUrl: "https://streamyard.com", fields: [{ key: "apiKey", label: "API Key", type: "password" }, { key: "broadcastDefault", label: "Destino padrão", type: "select", options: ["youtube", "facebook", "ambos"] }], color: "#7B2FF7" },
   { id: "youtube", name: "YouTube Data API", description: "Upload e gravações de cursos", category: "Cursos", docsUrl: "https://developers.google.com/youtube/v3", fields: [{ key: "apiKey", label: "API Key", type: "password" }, { key: "channelId", label: "ID do Canal", type: "text" }, { key: "playlistCourses", label: "Playlist de Cursos", type: "text" }], color: "#FF0000" },
-  { id: "serpapi", name: "SerpAPI (Google Translate)", description: "Tradução via Google Translate para o Dicionário", category: "Dicionário", docsUrl: "https://serpapi.com/dashboard", fields: [{ key: "apiKey", label: "API Key", type: "password" }], color: "#2D6CDF" },
   { id: "firebase", name: "Firebase", description: "Auth, Firestore, Storage", category: "Infraestrutura", docsUrl: "https://console.firebase.google.com", fields: [{ key: "projectId", label: "Project ID", type: "text" }, { key: "storageBucket", label: "Storage Bucket", type: "text" }, { key: "authDomain", label: "Auth Domain", type: "text" }], color: "#FFCA28" },
   { id: "autentique", name: "Autentique", description: "Assinatura digital de certificados", category: "Cursos", docsUrl: "https://docs.autentique.com.br/api", fields: [{ key: "apiToken", label: "API Token", type: "password", placeholder: "Bearer token da conta" }, { key: "sandbox", label: "Ambiente", type: "select", options: ["sandbox", "production"] }], color: "#0EA5E9" },
 ];
@@ -87,6 +86,14 @@ export default function FIntegracoesAdmin() {
       <div style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>Integrações</h1>
         <p style={{ color: "#666", fontSize: "0.95rem" }}>Gerencie conexões com serviços externos. Apenas Sacerdotisa e Técnicos.</p>
+      </div>
+
+      <div style={{ marginBottom: "1rem", padding: "0.7rem 1rem", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", fontSize: "0.82rem", color: "#1e40af" }}>
+        🌐 A tradução do <strong>Dicionário</strong> usa a <strong>Google Cloud Translation API</strong> via ADC (credenciais do Cloud Run) — não exige API key aqui.
+        {" "}
+        <a href="https://console.cloud.google.com/apis/library/translate.googleapis.com?project=egbe-fatoun-app" target="_blank" rel="noopener" style={{ color: "#1e40af", fontWeight: 600, textDecoration: "underline" }}>
+          Abrir no Console GCP ↗
+        </a>
       </div>
 
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
