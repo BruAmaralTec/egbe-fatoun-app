@@ -48,7 +48,8 @@ export default function FDicionario() {
     setTranslation("");
     try {
       const data = await translateApi({ text: sourceText, sourceLang: fromLang, targetLang: toLang });
-      setTranslation(data.translation || "Sem tradução.");
+      const out = (data.translation || "Sem tradução.").normalize("NFC");
+      setTranslation(out);
     } catch (err) {
       const resp = err.response?.data;
       const detail = resp?.details || resp?.error || err.message;
@@ -145,6 +146,13 @@ export default function FDicionario() {
             <p style={{ color: "#ccc", fontStyle: "italic" }}>A tradução aparecerá aqui...</p>
           )}
         </div>
+
+        {toLang === "yo" && translation && (
+          <p style={{ fontSize: "0.78rem", color: "#888", marginTop: "0.75rem", lineHeight: 1.5 }}>
+            ⚠️ O Google Translate para <strong>Yorùbá</strong> geralmente não inclui os pontos subscritos (<strong>ẹ</strong>/<strong>ọ</strong>/<strong>ṣ</strong>) — apenas os tons agudos e graves.
+            Para a grafia tradicional completa, ajuste manualmente ou consulte uma fonte litúrgica.
+          </p>
+        )}
       </div>
 
     </div>
