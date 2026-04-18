@@ -99,11 +99,6 @@ export default function FOseCalendar() {
   const todayCycles = getCyclesForDay(todayY, todayM, todayD);
   const todayMainColor = todayOrixas[0] ? ORIXA_COLOR[todayOrixas[0]] : "var(--egbe-green)";
 
-  const selectedDate = selDay ? new Date(curYear, curMonth, selDay) : null;
-  const selectedOrixas = selDay ? getOrixasForDay(curYear, curMonth, selDay) : [];
-  const selectedCycles = selDay ? getCyclesForDay(curYear, curMonth, selDay) : [];
-  const selectedMainColor = selectedOrixas[0] ? ORIXA_COLOR[selectedOrixas[0]] : null;
-
   function changeMonth(dir) {
     let m = curMonth + dir;
     let y = curYear;
@@ -369,7 +364,9 @@ export default function FOseCalendar() {
           </div>
         );
 
-        const onSelect = (y, m, d) => {
+        const onToggle = (y, m, d) => {
+          const isOpen = selDay === d && curMonth === m && curYear === y;
+          if (isOpen) { setSelDay(null); return; }
           if (y !== curYear) setCurYear(y);
           if (m !== curMonth) setCurMonth(m);
           setSelDay(d);
@@ -385,91 +382,80 @@ export default function FOseCalendar() {
                 const mainColor = dayOrixas[0] ? ORIXA_COLOR[dayOrixas[0]] : "#888";
                 const isSel = selDay === d && curMonth === m && curYear === y;
                 return (
-                  <button
+                  <div
                     key={`${y}-${m}-${d}`}
-                    onClick={() => onSelect(y, m, d)}
                     style={{
-                      display: "flex", justifyContent: "space-between", alignItems: "center",
-                      padding: "0.6rem 0.9rem", background: isSel ? mainColor + "15" : "#f9fafb",
+                      background: isSel ? mainColor + "15" : "#f9fafb",
                       borderRadius: "8px", border: `1px solid ${isSel ? mainColor : "#e5e7eb"}`,
-                      borderLeft: `4px solid ${mainColor}`, cursor: "pointer",
-                      fontFamily: "inherit", textAlign: "left", width: "100%",
+                      borderLeft: `4px solid ${mainColor}`,
+                      overflow: "hidden",
                     }}
                   >
-                    <div>
-                      <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
-                        {d} de {MONTHS[m]}{timeFilter === "periodo" ? ` de ${y}` : ""}
-                      </span>
-                      {dayCycles.length > 0 && (
-                        <span style={{ fontSize: "0.75rem", color: dayCycles[0].color || "#666", marginLeft: "0.5rem" }}>
-                          {dayCycles.map((c) => c.name).join(", ")}
+                    <button
+                      onClick={() => onToggle(y, m, d)}
+                      style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "0.6rem 0.9rem", background: "transparent", border: "none",
+                        cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
+                      }}
+                    >
+                      <div>
+                        <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                          {d} de {MONTHS[m]}{timeFilter === "periodo" ? ` de ${y}` : ""}
                         </span>
-                      )}
-                    </div>
-                    <span style={{ fontSize: "0.82rem", color: "#555" }}>
-                      {dayOrixas.join(" • ")}
-                    </span>
-                  </button>
+                        {dayCycles.length > 0 && (
+                          <span style={{ fontSize: "0.75rem", color: dayCycles[0].color || "#666", marginLeft: "0.5rem" }}>
+                            {dayCycles.map((c) => c.name).join(", ")}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: "0.82rem", color: "#555", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        {dayOrixas.join(" • ")}
+                        <span style={{ color: "#888", fontSize: "0.7rem", transform: isSel ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▼</span>
+                      </span>
+                    </button>
+                    {isSel && (
+                      <div style={{ padding: "0 0.9rem 0.9rem 0.9rem" }}>
+                        {dayOrixas.map((ox) => {
+                          const color = ORIXA_COLOR[ox] || "#888";
+                          const bg = ORIXA_BG[ox] || "#f3f4f6";
+                          const data = defaults[ox] || {};
+                          const hasContent = data.link || data.audio || data.text;
+                          return (
+                            <div key={ox} style={{ padding: "0.8rem", background: bg, borderRadius: "8px", marginBottom: "0.5rem" }}>
+                              <h4 style={{ color, fontSize: "0.95rem", marginBottom: "0.5rem" }}>{ox}</h4>
+                              {!hasContent ? (
+                                <p style={{ fontSize: "0.82rem", color: "#888", fontStyle: "italic" }}>
+                                  Nenhum conteúdo cadastrado para este Òrìṣà.
+                                </p>
+                              ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                  {data.text && <div className="rich-editor-content" style={{ fontSize: "0.85rem", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: data.text }} />}
+                                  {data.audio && (
+                                    <div>
+                                      <audio controls src={data.audio} style={{ width: "100%", maxWidth: "400px" }}>Seu navegador não suporta áudio.</audio>
+                                    </div>
+                                  )}
+                                  {data.link && <a href={data.link} target="_blank" rel="noopener" style={{ display: "inline-block", fontSize: "0.82rem", color, fontWeight: 600 }}>🔗 Abrir link ↗</a>}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {isAdmin && (
+                          <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.9rem", background: "#f0f7f3", borderRadius: "8px", border: "1px solid #d1fae5", fontSize: "0.8rem", color: "var(--egbe-green-dark)" }}>
+                            ⚙️ Para editar, acesse a <a href="/dashboard/admin/ose" style={{ color: "var(--egbe-green-dark)", fontWeight: 600, textDecoration: "underline" }}>Gestão do Calendário de Ọ̀sẹ̀</a>.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
           </div>
         );
       })()}
-
-      {/* Detalhe do dia selecionado */}
-      {selectedDate && selectedOrixas.length > 0 && (
-        <div className="card" style={{ borderLeft: `4px solid ${selectedMainColor}`, marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-            <div>
-              <h3 style={{ fontSize: "1.1rem", margin: 0 }}>{selDay} de {MONTHS[curMonth]} de {curYear}</h3>
-              {selectedCycles.length > 0 && (
-                <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.3rem" }}>
-                  {selectedCycles.map((c) => (
-                    <span key={c.id} style={{ fontSize: "0.75rem", padding: "0.2rem 0.6rem", borderRadius: "12px", background: (c.color || "#6b7280") + "20", color: c.color || "#374151", fontWeight: 600 }}>
-                      {c.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <p style={{ color: "#888", fontSize: "0.85rem", marginTop: "0.25rem" }}>{selectedOrixas.join(" • ")}</p>
-            </div>
-          </div>
-
-          {selectedOrixas.map((ox) => {
-            const color = ORIXA_COLOR[ox] || "#888";
-            const bg = ORIXA_BG[ox] || "#f3f4f6";
-            const data = defaults[ox] || {};
-            const hasContent = data.link || data.audio || data.text;
-            return (
-              <div key={ox} style={{ padding: "1rem", background: bg, borderRadius: "8px", marginBottom: "0.75rem" }}>
-                <h4 style={{ color, fontSize: "1rem", marginBottom: "0.75rem" }}>{ox}</h4>
-                {!hasContent ? (
-                  <p style={{ fontSize: "0.85rem", color: "#888", fontStyle: "italic" }}>
-                    Nenhum conteúdo cadastrado para este Òrìṣà.
-                  </p>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    {data.text && <div className="rich-editor-content" style={{ fontSize: "0.88rem", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: data.text }} />}
-                    {data.audio && (
-                      <div>
-                        <audio controls src={data.audio} style={{ width: "100%", maxWidth: "400px" }}>Seu navegador não suporta áudio.</audio>
-                      </div>
-                    )}
-                    {data.link && <a href={data.link} target="_blank" rel="noopener" style={{ display: "inline-block", fontSize: "0.85rem", color, fontWeight: 600 }}>🔗 Abrir link ↗</a>}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {isAdmin && (
-            <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "#f0f7f3", borderRadius: "8px", border: "1px solid #d1fae5", fontSize: "0.82rem", color: "var(--egbe-green-dark)" }}>
-              ⚙️ Para editar, acesse a <a href="/dashboard/admin/ose" style={{ color: "var(--egbe-green-dark)", fontWeight: 600, textDecoration: "underline" }}>Gestão do Calendário de Ọ̀sẹ̀</a>.
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Filtro de Ciclo embaixo do calendário (bolinhas) */}
       <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
