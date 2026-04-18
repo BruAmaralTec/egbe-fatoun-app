@@ -22,6 +22,8 @@ export default function FOseCalendar() {
   const [filters, setFilters] = useState([]);
   const [cycleFilters, setCycleFilters] = useState([]);
   const [timeFilter, setTimeFilter] = useState("mes");
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
   const [showOrixaDropdown, setShowOrixaDropdown] = useState(false);
   const orixaDropdownRef = useRef(null);
   const [dayOverrides, setDayOverrides] = useState({});
@@ -70,20 +72,6 @@ export default function FOseCalendar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showOrixaDropdown]);
 
-  function inTimeFilter(date) {
-    const t0 = new Date();
-    t0.setHours(0, 0, 0, 0);
-    const d0 = new Date(date);
-    d0.setHours(0, 0, 0, 0);
-    if (timeFilter === "semana") {
-      const day = t0.getDay() === 0 ? 6 : t0.getDay() - 1;
-      const start = new Date(t0); start.setDate(t0.getDate() - day);
-      const end = new Date(start); end.setDate(start.getDate() + 6);
-      return d0 >= start && d0 <= end;
-    }
-    return true;
-  }
-
   function getOrixasForDay(y, m, d) {
     const key = `${y}-${m}-${d}`;
     if (dayOverrides[key]?.orixas) return dayOverrides[key].orixas;
@@ -100,10 +88,6 @@ export default function FOseCalendar() {
     });
   }
 
-  // Build calendar
-  const firstDay = new Date(curYear, curMonth, 1);
-  let startDow = firstDay.getDay();
-  startDow = startDow === 0 ? 6 : startDow - 1;
   const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
   const today = new Date();
 
@@ -303,6 +287,7 @@ export default function FOseCalendar() {
         {[
           { id: "semana", label: "Semana" },
           { id: "mes", label: "Mês" },
+          { id: "periodo", label: "Período" },
         ].map((opt) => (
           <button
             key={opt.id}
@@ -322,97 +307,99 @@ export default function FOseCalendar() {
             {opt.label}
           </button>
         ))}
+        {timeFilter === "periodo" && (
+          <>
+            <input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "150px", fontSize: "0.8rem" }} />
+            <span style={{ fontSize: "0.8rem", color: "#888" }}>até</span>
+            <input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="input-field" style={{ padding: "0.35rem 0.5rem", width: "150px", fontSize: "0.8rem" }} />
+          </>
+        )}
       </div>
 
-      {/* Navegação do mês */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <button onClick={() => changeMonth(-1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}>←</button>
-        <h2 style={{ fontSize: "1.2rem" }}>{MONTHS[curMonth]} {curYear}</h2>
-        <button onClick={() => changeMonth(1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}>→</button>
-      </div>
-
-      {/* Calendário */}
-      <div className="card" style={{ marginBottom: "1.5rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", marginBottom: "4px" }}>
-          {["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map(d => (
-            <div key={d} style={{ textAlign: "center", fontSize: "0.75rem", fontWeight: 600, color: "#888", padding: "0.4rem" }}>{d}</div>
-          ))}
+      {/* Navegação do mês (só quando não está em Período) */}
+      {timeFilter !== "periodo" && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <button onClick={() => changeMonth(-1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}>←</button>
+          <h2 style={{ fontSize: "1.2rem" }}>{MONTHS[curMonth]} {curYear}</h2>
+          <button onClick={() => changeMonth(1)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}>→</button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px" }}>
-          {Array.from({ length: startDow }).map((_, i) => <div key={`e${i}`} />)}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const d = i + 1;
-            const date = new Date(curYear, curMonth, d);
-            const dayOrixas = getOrixasForDay(curYear, curMonth, d);
-            const dayCycles = getCyclesForDay(curYear, curMonth, d);
-            const mainColor = dayOrixas[0] ? ORIXA_COLOR[dayOrixas[0]] : "#ccc";
-            const isToday = date.toDateString() === today.toDateString();
-            const isSel = selDay === d;
-            const matchesOrixa = filters.length === 0 || dayOrixas.some((ox) => filters.includes(ox));
-            const matchesCycle = cycleFilters.length === 0 || dayCycles.some((c) => cycleFilters.includes(c.id));
-            const matchesTime = inTimeFilter(date);
-            const isDimmed = !matchesOrixa || !matchesCycle || !matchesTime;
-            return (
-              <div key={d} onClick={() => setSelDay(d)} style={{
-                padding: "0.5rem 0.25rem", borderRadius: "8px", cursor: "pointer", textAlign: "center",
-                background: isSel ? mainColor : isToday ? "#f0f0f0" : "transparent",
-                opacity: isDimmed ? 0.25 : 1,
-                border: isToday && !isSel ? "2px solid var(--egbe-green)" : "2px solid transparent",
-                transition: "all 0.15s",
-              }}>
-                <div style={{ fontSize: "0.85rem", fontWeight: 600, color: isSel ? "white" : "#333" }}>{d}</div>
-                <div style={{ display: "flex", gap: "2px", justifyContent: "center", marginTop: "2px", flexWrap: "wrap", maxWidth: "60px", marginLeft: "auto", marginRight: "auto" }}>
-                  {dayOrixas.map((ox) => (
-                    <div key={ox} style={{ width: "6px", height: "6px", borderRadius: "50%", background: isSel ? "rgba(255,255,255,0.7)" : (ORIXA_COLOR[ox] || "#888") }} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
-      {/* Lista de dias que correspondem aos filtros */}
-      {(filters.length > 0 || cycleFilters.length > 0) && (() => {
-        const matchingDays = [];
-        for (let d = 1; d <= daysInMonth; d++) {
-          const date = new Date(curYear, curMonth, d);
-          const dayOrixas = getOrixasForDay(curYear, curMonth, d);
-          const dayCycles = getCyclesForDay(curYear, curMonth, d);
+      {/* Lista de dias */}
+      {(() => {
+        if (timeFilter === "periodo" && (!periodStart || !periodEnd)) {
+          return (
+            <div className="card" style={{ marginBottom: "1.5rem", textAlign: "center", padding: "1.5rem", color: "#888" }}>
+              Escolha as datas de início e fim do período.
+            </div>
+          );
+        }
+
+        const dates = [];
+        if (timeFilter === "periodo") {
+          const s = new Date(periodStart + "T00:00:00");
+          const e = new Date(periodEnd + "T00:00:00");
+          if (s <= e) {
+            const cur = new Date(s);
+            while (cur <= e) { dates.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
+          }
+        } else if (timeFilter === "semana") {
+          const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+          const dow = t0.getDay() === 0 ? 6 : t0.getDay() - 1;
+          const start = new Date(t0); start.setDate(t0.getDate() - dow);
+          for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); dates.push(d); }
+        } else {
+          for (let d = 1; d <= daysInMonth; d++) dates.push(new Date(curYear, curMonth, d));
+        }
+
+        const matchingDays = dates.map((date) => {
+          const y = date.getFullYear(); const m = date.getMonth(); const d = date.getDate();
+          const dayOrixas = getOrixasForDay(y, m, d);
+          const dayCycles = getCyclesForDay(y, m, d);
           const matchesOrixa = filters.length === 0 || dayOrixas.some((ox) => filters.includes(ox));
           const matchesCycle = cycleFilters.length === 0 || dayCycles.some((c) => cycleFilters.includes(c.id));
-          const matchesTime = inTimeFilter(date);
-          if (matchesOrixa && matchesCycle && matchesTime && dayOrixas.length > 0) {
-            matchingDays.push({ d, dayOrixas, dayCycles });
-          }
-        }
+          return { y, m, d, dayOrixas, dayCycles, match: matchesOrixa && matchesCycle && dayOrixas.length > 0 };
+        }).filter((x) => x.match);
+
+        const rangeLabel = timeFilter === "mes" ? `em ${MONTHS[curMonth]}` : timeFilter === "semana" ? "nesta semana" : "no período";
+
         if (matchingDays.length === 0) return (
           <div className="card" style={{ marginBottom: "1.5rem", textAlign: "center", padding: "1.5rem", color: "#aaa" }}>
-            Nenhum dia encontrado com os filtros selecionados neste mês.
+            Nenhum dia de Ọ̀sẹ̀ encontrado {rangeLabel}.
           </div>
         );
+
+        const onSelect = (y, m, d) => {
+          if (y !== curYear) setCurYear(y);
+          if (m !== curMonth) setCurMonth(m);
+          setSelDay(d);
+        };
+
         return (
           <div className="card" style={{ marginBottom: "1.5rem" }}>
             <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>
-              {matchingDays.length} dia(s) encontrado(s) em {MONTHS[curMonth]}
+              {matchingDays.length} dia(s) encontrado(s) {rangeLabel}
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {matchingDays.map(({ d, dayOrixas, dayCycles }) => {
+              {matchingDays.map(({ y, m, d, dayOrixas, dayCycles }) => {
                 const mainColor = dayOrixas[0] ? ORIXA_COLOR[dayOrixas[0]] : "#888";
+                const isSel = selDay === d && curMonth === m && curYear === y;
                 return (
                   <button
-                    key={d}
-                    onClick={() => setSelDay(d)}
+                    key={`${y}-${m}-${d}`}
+                    onClick={() => onSelect(y, m, d)}
                     style={{
                       display: "flex", justifyContent: "space-between", alignItems: "center",
-                      padding: "0.6rem 0.9rem", background: selDay === d ? mainColor + "15" : "#f9fafb",
-                      borderRadius: "8px", border: `1px solid ${selDay === d ? mainColor : "#e5e7eb"}`,
+                      padding: "0.6rem 0.9rem", background: isSel ? mainColor + "15" : "#f9fafb",
+                      borderRadius: "8px", border: `1px solid ${isSel ? mainColor : "#e5e7eb"}`,
                       borderLeft: `4px solid ${mainColor}`, cursor: "pointer",
                       fontFamily: "inherit", textAlign: "left", width: "100%",
                     }}
                   >
                     <div>
-                      <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{d} de {MONTHS[curMonth]}</span>
+                      <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                        {d} de {MONTHS[m]}{timeFilter === "periodo" ? ` de ${y}` : ""}
+                      </span>
                       {dayCycles.length > 0 && (
                         <span style={{ fontSize: "0.75rem", color: dayCycles[0].color || "#666", marginLeft: "0.5rem" }}>
                           {dayCycles.map((c) => c.name).join(", ")}
