@@ -6,7 +6,7 @@
 
 const axios = require("axios");
 
-const HF_MODEL = "facebook/nllb-200-distilled-600M";
+const HF_MODEL = "facebook/nllb-200-distilled-1.3B";
 const HF_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
 
 // Map dos códigos curtos (pt/en/es/fr/yo) -> códigos flores-200 do NLLB
