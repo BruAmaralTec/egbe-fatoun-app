@@ -140,7 +140,7 @@ export default function FCursos() {
                     className="btn btn-secondary"
                     style={{ flex: 1, textDecoration: "none", textAlign: "center", justifyContent: "center" }}
                   >
-                    Ver detalhes
+                    Detalhes
                   </Link>
                   {course.paymentLink && course.status !== "finished" && (
                     <a
@@ -150,7 +150,7 @@ export default function FCursos() {
                       className="btn btn-primary"
                       style={{ flex: 1, textDecoration: "none", textAlign: "center", justifyContent: "center" }}
                     >
-                      Comprar ↗
+                      Inscrever ↗
                     </a>
                   )}
                 </div>
