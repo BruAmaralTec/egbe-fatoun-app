@@ -136,9 +136,17 @@ input, textarea, select, [contenteditable] {
   color: #9ca3af;
   pointer-events: none;
 }
-.rich-editor-content ul { padding-left: 1.5rem; list-style: disc; }
-.rich-editor-content ol { padding-left: 1.5rem; list-style: decimal; }
+.rich-editor-content ul { padding-left: 1.5rem; list-style: disc outside; margin: 0.4rem 0; }
+.rich-editor-content ol { padding-left: 1.5rem; list-style: decimal outside; margin: 0.4rem 0; }
+.rich-editor-content ul ul { list-style: circle outside; }
+.rich-editor-content ul ul ul { list-style: square outside; }
+.rich-editor-content ol ol { list-style: lower-alpha outside; }
+.rich-editor-content ol ol ol { list-style: lower-roman outside; }
+.rich-editor-content li { margin: 0.15rem 0; }
 .rich-editor-content p { margin: 0.3rem 0; }
+.rich-editor-content blockquote { margin: 0.4rem 0 0.4rem 1.5rem; padding-left: 0.75rem; border-left: 2px solid #d1d5db; color: #444; }
+.rich-editor-content b, .rich-editor-content strong { font-weight: 700; }
+.rich-editor-content i, .rich-editor-content em { font-style: italic; }
 
 .input-field {
   width: 100%;

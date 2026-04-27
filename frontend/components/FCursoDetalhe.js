@@ -181,6 +181,7 @@ export default function FCursoDetalhe() {
                   </h3>
                   {descText ? (
                     <div
+                      className="rich-editor-content"
                       style={{ fontSize: "0.9rem", lineHeight: 1.65, color: "#333" }}
                       dangerouslySetInnerHTML={{ __html: m.description }}
                     />
