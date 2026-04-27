@@ -29,6 +29,7 @@ export const ALL_AREAS = [
   { key: "membros", label: "Gestão de Usuários", href: "/dashboard/membros", icon: "👥", group: "Gestão" },
   { key: "admin-eventos", label: "Gerenciar Eventos", href: "/dashboard/admin/eventos", icon: "📅", group: "Gestão" },
   { key: "admin-cursos", label: "Gerenciar Cursos", href: "/dashboard/admin/cursos", icon: "🎓", group: "Gestão" },
+  { key: "admin-biblioteca", label: "Gestão da Biblioteca", href: "/dashboard/admin/biblioteca", icon: "📖", group: "Gestão" },
   { key: "admin-certificados", label: "Certificados", href: "/dashboard/admin/certificados", icon: "📜", group: "Gestão" },
   { key: "admin-rituais", label: "Gestão de Rituais", href: "/dashboard/admin/rituais", icon: "🕯️", group: "Gestão" },
   { key: "admin-ose", label: "Gestão do Calendário Ọ̀sẹ̀", href: "/dashboard/admin/ose", icon: "📿", group: "Gestão" },
@@ -47,10 +48,10 @@ const COMUNIDADE = ["ose", "cursos", "biblioteca", "dicionario", "pagamentos", "
 
 export const DEFAULT_PERMISSIONS = {
   cliente: [...COMUNIDADE],
-  midias: [...COMUNIDADE, "admin-eventos", "admin-cursos"],
+  midias: [...COMUNIDADE, "admin-eventos", "admin-cursos", "admin-biblioteca"],
   filho: [...COMUNIDADE],
-  conselho: [...COMUNIDADE, "membros", "admin-eventos", "admin-cursos", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes"],
-  sacerdote: [...COMUNIDADE, "membros", "admin-eventos", "admin-cursos", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes", "admin-financeiro", "admin-configuracoes"],
+  conselho: [...COMUNIDADE, "membros", "admin-eventos", "admin-cursos", "admin-biblioteca", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes"],
+  sacerdote: [...COMUNIDADE, "membros", "admin-eventos", "admin-cursos", "admin-biblioteca", "admin-certificados", "admin-rituais", "admin-ose", "admin-notificacoes", "admin-financeiro", "admin-configuracoes"],
   tecnico: ALL_AREAS.map((a) => a.key),
 };
 
