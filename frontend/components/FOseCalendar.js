@@ -330,7 +330,7 @@ export default function FOseCalendar() {
           );
         }
 
-        const dates = [];
+        let dates = [];
         if (timeFilter === "periodo") {
           const s = new Date(periodStart + "T00:00:00");
           const e = new Date(periodEnd + "T00:00:00");
@@ -342,9 +342,20 @@ export default function FOseCalendar() {
           const t0 = new Date(); t0.setHours(0, 0, 0, 0);
           const dow = t0.getDay() === 0 ? 6 : t0.getDay() - 1;
           const start = new Date(t0); start.setDate(t0.getDate() - dow);
-          for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); dates.push(d); }
+          const week = [];
+          for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); week.push(d); }
+          const idx = week.findIndex((x) => x.getFullYear() === todayY && x.getMonth() === todayM && x.getDate() === todayD);
+          dates = idx > 0 ? [...week.slice(idx), ...week.slice(0, idx)] : week;
         } else {
-          for (let d = 1; d <= daysInMonth; d++) dates.push(new Date(curYear, curMonth, d));
+          const month = [];
+          for (let d = 1; d <= daysInMonth; d++) month.push(new Date(curYear, curMonth, d));
+          const isCurrentMonth = curMonth === todayM && curYear === todayY;
+          if (isCurrentMonth) {
+            const idx = month.findIndex((x) => x.getDate() === todayD);
+            dates = idx > 0 ? [...month.slice(idx), ...month.slice(0, idx)] : month;
+          } else {
+            dates = month;
+          }
         }
 
         const matchingDays = dates.map((date) => {
