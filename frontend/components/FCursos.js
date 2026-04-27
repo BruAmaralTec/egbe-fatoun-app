@@ -119,10 +119,6 @@ export default function FCursos() {
                   </p>
                 )}
 
-                <Link href={`/dashboard/cursos/${course.id}`} style={{ fontSize: "0.82rem", color: "var(--egbe-green)", fontWeight: 600, textDecoration: "none", marginBottom: "0.5rem", display: "inline-block" }}>
-                  + detalhes
-                </Link>
-
                 <div style={{ fontSize: "0.82rem", color: "#888", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                   {agenda && <span>📅 {agenda}</span>}
                   {(course.modules?.length || 0) > 0 && (
@@ -138,17 +134,26 @@ export default function FCursos() {
                   )}
                 </div>
 
-                {course.paymentLink && course.status !== "finished" && (
-                  <a
-                    href={course.paymentLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-primary"
-                    style={{ marginTop: "0.75rem", textDecoration: "none", textAlign: "center", justifyContent: "center", width: "100%" }}
+                <div style={{ marginTop: "auto", paddingTop: "0.9rem", display: "flex", gap: "0.5rem" }}>
+                  <Link
+                    href={`/dashboard/cursos/${course.id}`}
+                    className="btn btn-secondary"
+                    style={{ flex: 1, textDecoration: "none", textAlign: "center", justifyContent: "center" }}
                   >
-                    Comprar curso ↗
-                  </a>
-                )}
+                    Ver detalhes
+                  </Link>
+                  {course.paymentLink && course.status !== "finished" && (
+                    <a
+                      href={course.paymentLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary"
+                      style={{ flex: 1, textDecoration: "none", textAlign: "center", justifyContent: "center" }}
+                    >
+                      Comprar ↗
+                    </a>
+                  )}
+                </div>
               </div>
             );
           })}
