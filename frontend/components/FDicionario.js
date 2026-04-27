@@ -35,6 +35,7 @@ export default function FDicionario() {
   const [provider, setProvider] = useState("");
   const [translating, setTranslating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const [copiedTranslation, setCopiedTranslation] = useState(false);
 
   const involvesYoruba = fromLang === "yo" || toLang === "yo";
 
@@ -43,6 +44,12 @@ export default function FDicionario() {
     navigator.clipboard.writeText(yoruba);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 1500);
+  }
+
+  function copyTranslation() {
+    navigator.clipboard.writeText(translation.normalize("NFC"));
+    setCopiedTranslation(true);
+    setTimeout(() => setCopiedTranslation(false), 1500);
   }
 
   async function handleTranslate() {
@@ -144,14 +151,22 @@ export default function FDicionario() {
           {translating ? (
             <p style={{ color: "#888", fontStyle: "italic" }}>Traduzindo...</p>
           ) : translation ? (
-            <div>
-              <p style={{ fontSize: "1rem", lineHeight: 1.7, color: "#1a1a1a" }}>{translation}</p>
-              <button onClick={() => navigator.clipboard.writeText(translation.normalize("NFC"))} style={{ marginTop: "0.5rem", padding: "0.3rem 0.7rem", background: "none", border: "1.5px solid var(--egbe-green)", borderRadius: "4px", color: "var(--egbe-green)", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>Copiar</button>
-            </div>
+            <p style={{ fontSize: "1rem", lineHeight: 1.7, color: "#1a1a1a", margin: 0 }}>{translation}</p>
           ) : (
-            <p style={{ color: "#ccc", fontStyle: "italic" }}>A tradução aparecerá aqui...</p>
+            <p style={{ color: "#ccc", fontStyle: "italic", margin: 0 }}>A tradução aparecerá aqui...</p>
           )}
         </div>
+
+        {/* Botão copiar — abaixo da tradução */}
+        {translation && !translating && (
+          <button
+            onClick={copyTranslation}
+            className={`btn ${copiedTranslation ? "btn-primary" : "btn-secondary"}`}
+            style={{ width: "100%", justifyContent: "center", marginTop: "0.75rem", transition: "background 0.2s" }}
+          >
+            {copiedTranslation ? "✓ Copiado!" : "📋 Copiar tradução"}
+          </button>
+        )}
 
         {provider && translation && (
           <p style={{ fontSize: "0.75rem", color: "#888", marginTop: "0.75rem", lineHeight: 1.5 }}>
