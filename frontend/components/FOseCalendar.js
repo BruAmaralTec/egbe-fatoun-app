@@ -345,14 +345,20 @@ export default function FOseCalendar() {
           const week = [];
           for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); week.push(d); }
           const idx = week.findIndex((x) => x.getFullYear() === todayY && x.getMonth() === todayM && x.getDate() === todayD);
-          dates = idx > 0 ? [...week.slice(idx), ...week.slice(0, idx)] : week;
+          if (idx >= 0) {
+            const next = (idx + 1) % week.length;
+            dates = [...week.slice(next), ...week.slice(0, next)];
+          } else {
+            dates = week;
+          }
         } else {
           const month = [];
           for (let d = 1; d <= daysInMonth; d++) month.push(new Date(curYear, curMonth, d));
           const isCurrentMonth = curMonth === todayM && curYear === todayY;
           if (isCurrentMonth) {
             const idx = month.findIndex((x) => x.getDate() === todayD);
-            dates = idx > 0 ? [...month.slice(idx), ...month.slice(0, idx)] : month;
+            const next = (idx + 1) % month.length;
+            dates = [...month.slice(next), ...month.slice(0, next)];
           } else {
             dates = month;
           }
