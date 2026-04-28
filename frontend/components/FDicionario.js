@@ -22,7 +22,7 @@ const QUICK_PHRASES = [
   "Ẹ káàárọ̀ — Bom dia",
   "Ẹ kú ọ̀sán — Boa tarde",
   "Ẹ kú alẹ́ — Boa noite",
-  "Ìyá mi Fatoun — Minha mãe Fatoun",
+  "Àbọrú, Àbọyè, Àbọṣíṣe",
   "Àṣẹ o! — Que assim seja!",
   "Ìbà Olódùmarè — Reverência ao Criador",
 ];
