@@ -77,7 +77,7 @@ export default function FCursoDetalhe() {
   const daysFilled = (course.days || []).filter((d) => d.date).sort((a, b) => a.date.localeCompare(b.date));
 
   return (
-    <div style={{ maxWidth: "1115px", width: "100%" }}>
+    <div style={{ maxWidth: "1130px", width: "100%" }}>
       <Link href="/dashboard/cursos" className="btn btn-secondary" style={{ marginBottom: "1rem", fontSize: "0.85rem", display: "inline-block", textDecoration: "none" }}>← Voltar aos cursos</Link>
 
       {/* Hero */}
