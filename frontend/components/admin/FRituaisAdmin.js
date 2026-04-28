@@ -9,10 +9,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/LAuthContext";
 import { useModal } from "@/lib/LModalContext";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/LFirebase";
 import FRichTextEditor from "@/components/FRichTextEditor";
 import FOduInput from "@/components/FOduInput";
+import { DEFAULT_ORIXAS } from "@/lib/LOse";
 
 // Templates de Obrigação — materiais e preparo pré-definidos
 const RITUAIS = {
@@ -98,9 +99,27 @@ const RITUAIS = {
 const EMPTY_EBO_ITEM = {
   template: "",
   materiaisCheck: {},
-  materiaisQtd: {},
-  preparoCheck: {},
+  materiaisQtd: {},      // legado (string livre) — mantido pra retrocompat
+  materiaisUnidades: {}, // novo: número de unidades por material
+  materiaisVolume: {},   // novo: volume/medida em texto (ex: "250ml", "1L")
+  materiaisPreparo: {},  // novo: preparo inline por material
+  preparoCheck: {},      // legado: checklist procedural (não usado mais na UI do ebó)
+  animais: [],           // [{ orixa, qtd, animal, sexo }]
 };
+
+// Parse o qtd default do template em unidades + volume.
+// "1" → { unidades: 1, volume: "" }
+// "250ml" → { unidades: 1, volume: "250ml" }
+// "4 gomos" → { unidades: 4, volume: "gomos" }
+function parseTemplateQtd(qtd) {
+  if (qtd === undefined || qtd === null) return { unidades: 1, volume: "" };
+  const s = String(qtd).trim();
+  if (!s) return { unidades: 1, volume: "" };
+  if (/^\d+$/.test(s)) return { unidades: parseInt(s, 10), volume: "" };
+  const m = s.match(/^(\d+)\s+(.+)$/);
+  if (m) return { unidades: parseInt(m[1], 10), volume: m[2] };
+  return { unidades: 1, volume: s };
+}
 
 const EMPTY_CONSULTA = {
   type: "consulta",
@@ -180,6 +199,7 @@ export default function FRituaisAdmin() {
   const { showAlert, showConfirm } = useModal();
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
+  const [orixas, setOrixas] = useState(DEFAULT_ORIXAS);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("list"); // list | new | detail
   const [selectedId, setSelectedId] = useState(null);
@@ -191,9 +211,10 @@ export default function FRituaisAdmin() {
   useEffect(() => {
     if (!isConselho) return;
     async function load() {
-      const [eventsSnap, usersSnap] = await Promise.all([
+      const [eventsSnap, usersSnap, oxSnap] = await Promise.all([
         getDocs(collection(db, "rituals")).catch(() => ({ docs: [] })),
         getDocs(collection(db, "users")).catch(() => ({ docs: [] })),
+        getDoc(doc(db, "settings", "oseOrixas")).catch(() => null),
       ]);
       const evts = eventsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       evts.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
@@ -201,6 +222,7 @@ export default function FRituaisAdmin() {
       const usrs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       usrs.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
       setUsers(usrs);
+      if (oxSnap?.exists() && oxSnap.data().list) setOrixas(oxSnap.data().list);
       setLoading(false);
     }
     load();
@@ -267,6 +289,7 @@ export default function FRituaisAdmin() {
       form={form}
       setForm={setForm}
       users={users}
+      orixas={orixas}
       saving={saving}
       isEditing={!!selectedId}
       isAdmin={isAdmin}
@@ -355,7 +378,7 @@ export default function FRituaisAdmin() {
 // ========================================
 // Form de criação / edição
 // ========================================
-function RitualForm({ form, setForm, users, saving, isEditing, isAdmin, onCancel, onSave, onDelete }) {
+function RitualForm({ form, setForm, users, orixas, saving, isEditing, isAdmin, onCancel, onSave, onDelete }) {
   const isConsulta = form.type === "consulta";
   const template = !isConsulta ? RITUAIS[form.ritualTemplate] : null;
   const [userSearch, setUserSearch] = useState("");
@@ -627,32 +650,134 @@ function RitualForm({ form, setForm, users, saving, isEditing, isAdmin, onCancel
                       </select>
 
                       {tpl && (
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
-                          <div>
-                            <h4 style={{ fontSize: "0.92rem", marginBottom: "0.4rem", color: tpl.cor }}>🛒 Materiais</h4>
-                            {tpl.compra.map((item, i) => {
-                              const checked = !!ebo.materiaisCheck?.[i];
-                              const qtd = ebo.materiaisQtd?.[i] !== undefined ? ebo.materiaisQtd[i] : item.qtd;
-                              return (
-                                <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0", borderBottom: "1px solid #f3f4f6" }}>
-                                  <input type="checkbox" checked={checked} onChange={() => updateThis({ ...ebo, materiaisCheck: { ...ebo.materiaisCheck, [i]: !checked } })} style={{ accentColor: tpl.cor, flexShrink: 0 }} />
-                                  <span style={{ flex: 1, fontSize: "0.86rem", textDecoration: checked ? "line-through" : "none", color: checked ? "#888" : "#1a1a1a" }}>{item.nome}</span>
-                                  <input type="text" value={qtd} onChange={(e) => updateThis({ ...ebo, materiaisQtd: { ...ebo.materiaisQtd, [i]: e.target.value } })} style={{ width: "76px", padding: "0.22rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }} />
-                                </div>
-                              );
-                            })}
+                        <>
+                          <h4 style={{ fontSize: "0.92rem", marginBottom: "0.4rem", color: tpl.cor }}>🛒 Materiais</h4>
+                          {/* Header das colunas */}
+                          <div style={{ display: "grid", gridTemplateColumns: "20px 1.6fr 70px 90px 1.4fr", gap: "0.4rem", padding: "0 0.25rem 0.3rem 0.25rem", fontSize: "0.7rem", fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid #e5e7eb" }}>
+                            <span></span>
+                            <span>Material</span>
+                            <span style={{ textAlign: "center" }}>Qtd</span>
+                            <span style={{ textAlign: "center" }}>Volume</span>
+                            <span>Preparo</span>
                           </div>
-                          <div>
-                            <h4 style={{ fontSize: "0.92rem", marginBottom: "0.4rem", color: tpl.cor }}>🔥 Preparo</h4>
-                            {tpl.preparo.map((step, i) => (
-                              <label key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0", cursor: "pointer", borderBottom: "1px solid #f3f4f6" }}>
-                                <input type="checkbox" checked={!!ebo.preparoCheck?.[i]} onChange={() => updateThis({ ...ebo, preparoCheck: { ...ebo.preparoCheck, [i]: !ebo.preparoCheck?.[i] } })} style={{ accentColor: tpl.cor }} />
-                                <span style={{ fontSize: "0.86rem", textDecoration: ebo.preparoCheck?.[i] ? "line-through" : "none", color: ebo.preparoCheck?.[i] ? "#888" : "#1a1a1a" }}>{step}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
+                          {tpl.compra.map((item, i) => {
+                            const checked = !!ebo.materiaisCheck?.[i];
+                            const def = parseTemplateQtd(item.qtd);
+                            const unidades = ebo.materiaisUnidades?.[i] !== undefined ? ebo.materiaisUnidades[i] : def.unidades;
+                            const volume = ebo.materiaisVolume?.[i] !== undefined
+                              ? ebo.materiaisVolume[i]
+                              : (ebo.materiaisQtd?.[i] !== undefined ? ebo.materiaisQtd[i] : def.volume);
+                            const preparoTxt = ebo.materiaisPreparo?.[i] || "";
+                            return (
+                              <div key={i} style={{ display: "grid", gridTemplateColumns: "20px 1.6fr 70px 90px 1.4fr", gap: "0.4rem", alignItems: "center", padding: "0.35rem 0.25rem", borderBottom: "1px solid #f3f4f6" }}>
+                                <input type="checkbox" checked={checked} onChange={() => updateThis({ ...ebo, materiaisCheck: { ...ebo.materiaisCheck, [i]: !checked } })} style={{ accentColor: tpl.cor }} />
+                                <span style={{ fontSize: "0.86rem", textDecoration: checked ? "line-through" : "none", color: checked ? "#888" : "#1a1a1a" }}>{item.nome}</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={unidades}
+                                  onChange={(e) => updateThis({ ...ebo, materiaisUnidades: { ...ebo.materiaisUnidades, [i]: e.target.value === "" ? "" : parseInt(e.target.value, 10) } })}
+                                  style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }}
+                                />
+                                <input
+                                  type="text"
+                                  value={volume}
+                                  onChange={(e) => updateThis({ ...ebo, materiaisVolume: { ...ebo.materiaisVolume, [i]: e.target.value } })}
+                                  placeholder="ml/L"
+                                  style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }}
+                                />
+                                <input
+                                  type="text"
+                                  value={preparoTxt}
+                                  onChange={(e) => updateThis({ ...ebo, materiaisPreparo: { ...ebo.materiaisPreparo, [i]: e.target.value } })}
+                                  placeholder="Notas de preparo deste material..."
+                                  style={{ width: "100%", padding: "0.22rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem" }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </>
                       )}
+
+                      {/* Lista de Animais */}
+                      <div style={{ marginTop: "1rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                          <h4 style={{ fontSize: "0.92rem", margin: 0, color: tpl?.cor || "#666" }}>🐦 Animais</h4>
+                          <button
+                            type="button"
+                            onClick={() => updateThis({ ...ebo, animais: [...(ebo.animais || []), { orixa: "", qtd: 1, animal: "", sexo: "macho" }] })}
+                            className="btn btn-secondary"
+                            style={{ fontSize: "0.78rem", padding: "0.25rem 0.65rem" }}
+                          >
+                            + Adicionar animal
+                          </button>
+                        </div>
+                        {(ebo.animais || []).length > 0 && (
+                          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 60px 1.4fr 110px 30px", gap: "0.4rem", padding: "0 0.25rem 0.3rem 0.25rem", fontSize: "0.7rem", fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid #e5e7eb" }}>
+                            <span>Òrìṣà</span>
+                            <span style={{ textAlign: "center" }}>Qtd</span>
+                            <span>Animal</span>
+                            <span>Sexo</span>
+                            <span></span>
+                          </div>
+                        )}
+                        {(ebo.animais || []).map((a, ai) => {
+                          function updateAnimal(next) {
+                            const list = [...(ebo.animais || [])]; list[ai] = next;
+                            updateThis({ ...ebo, animais: list });
+                          }
+                          function removeAnimal() {
+                            updateThis({ ...ebo, animais: (ebo.animais || []).filter((_, i) => i !== ai) });
+                          }
+                          return (
+                            <div key={ai} style={{ display: "grid", gridTemplateColumns: "1.4fr 60px 1.4fr 110px 30px", gap: "0.4rem", alignItems: "center", padding: "0.35rem 0.25rem", borderBottom: "1px solid #f3f4f6" }}>
+                              <select
+                                value={a.orixa || ""}
+                                onChange={(e) => updateAnimal({ ...a, orixa: e.target.value })}
+                                style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", background: "white" }}
+                              >
+                                <option value="">—</option>
+                                {orixas.map((o) => <option key={o.name} value={o.name}>{o.name}</option>)}
+                              </select>
+                              <input
+                                type="number"
+                                min="1"
+                                value={a.qtd || 1}
+                                onChange={(e) => updateAnimal({ ...a, qtd: e.target.value === "" ? "" : parseInt(e.target.value, 10) })}
+                                style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }}
+                              />
+                              <input
+                                type="text"
+                                value={a.animal || ""}
+                                onChange={(e) => updateAnimal({ ...a, animal: e.target.value })}
+                                placeholder="Ex: galo, pomba, cabra..."
+                                style={{ width: "100%", padding: "0.22rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem" }}
+                              />
+                              <select
+                                value={a.sexo || "macho"}
+                                onChange={(e) => updateAnimal({ ...a, sexo: e.target.value })}
+                                style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", background: "white" }}
+                              >
+                                <option value="macho">Macho</option>
+                                <option value="femea">Fêmea</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={removeAnimal}
+                                style={{ background: "none", border: "1.5px solid #fecaca", borderRadius: "5px", color: "var(--egbe-red)", cursor: "pointer", padding: "0.2rem 0.3rem", fontSize: "0.72rem" }}
+                                title="Remover"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          );
+                        })}
+                        {(ebo.animais || []).length === 0 && (
+                          <p style={{ fontSize: "0.78rem", color: "#aaa", fontStyle: "italic", padding: "0.4rem 0.25rem" }}>
+                            Nenhum animal adicionado.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -672,7 +797,7 @@ function RitualForm({ form, setForm, users, saving, isEditing, isAdmin, onCancel
             <p style={{ fontSize: "0.82rem", color: "#888", marginBottom: "0.75rem" }}>
               Período de resguardo pós-consulta. O sistema indica quando o preceito termina.
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
               <div>
                 <label className="label">Dias de preceito</label>
                 <input className="input-field" type="number" min="0" value={form.preceitoDias || 0} onChange={(e) => setForm({ ...form, preceitoDias: parseInt(e.target.value) || 0 })} />
@@ -680,6 +805,16 @@ function RitualForm({ form, setForm, users, saving, isEditing, isAdmin, onCancel
               <div>
                 <label className="label">Data de início</label>
                 <input className="input-field" type="date" value={form.preceitoStartDate || ""} onChange={(e) => setForm({ ...form, preceitoStartDate: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">Data final (auto)</label>
+                <input
+                  className="input-field"
+                  type="date"
+                  value={preceitoEnd ? preceitoEnd.toISOString().split("T")[0] : ""}
+                  disabled
+                  style={{ background: "#f3f4f6", cursor: "not-allowed", color: "#1a1a1a" }}
+                />
               </div>
             </div>
             {preceitoEnd && (
