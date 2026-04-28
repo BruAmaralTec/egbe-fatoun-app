@@ -138,7 +138,7 @@ export default function FCursos() {
                   <Link
                     href={`/dashboard/cursos/${course.id}`}
                     className="btn btn-secondary"
-                    style={{ flex: 1, textDecoration: "none", textAlign: "center", justifyContent: "center" }}
+                    style={{ flex: 1, textDecoration: "none", textAlign: "center", justifyContent: "center", padding: "0.6rem 0.75rem", whiteSpace: "nowrap", minWidth: 0 }}
                   >
                     Detalhes
                   </Link>
@@ -148,7 +148,7 @@ export default function FCursos() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-primary"
-                      style={{ flex: 1, textDecoration: "none", textAlign: "center", justifyContent: "center" }}
+                      style={{ flex: 1, textDecoration: "none", textAlign: "center", justifyContent: "center", padding: "0.6rem 0.75rem", whiteSpace: "nowrap", minWidth: 0 }}
                     >
                       Inscrever ↗
                     </a>
