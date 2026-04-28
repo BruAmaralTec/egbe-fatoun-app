@@ -77,7 +77,7 @@ export default function FCursoDetalhe() {
   const daysFilled = (course.days || []).filter((d) => d.date).sort((a, b) => a.date.localeCompare(b.date));
 
   return (
-    <div style={{ maxWidth: "1100px", width: "100%" }}>
+    <div style={{ maxWidth: "1115px", width: "100%" }}>
       <Link href="/dashboard/cursos" className="btn btn-secondary" style={{ marginBottom: "1rem", fontSize: "0.85rem", display: "inline-block", textDecoration: "none" }}>← Voltar aos cursos</Link>
 
       {/* Hero */}
@@ -105,10 +105,10 @@ export default function FCursoDetalhe() {
         </div>
         <h1 style={{ fontSize: "clamp(1.4rem, 4vw, 2rem)", marginBottom: "0.25rem", lineHeight: 1.15, wordBreak: "break-word" }}>{course.title}</h1>
         {course.subtitle && (
-          <p style={{ fontSize: "1.05rem", color: "#666", fontStyle: "italic", marginBottom: "0.5rem" }}>{course.subtitle}</p>
+          <p style={{ fontSize: "1.2rem", color: "#666", fontStyle: "italic", marginBottom: "0.5rem" }}>{course.subtitle}</p>
         )}
         {course.sacerdotisa && (
-          <p style={{ fontSize: "0.95rem", color: "var(--egbe-green-dark)", fontWeight: 500 }}>
+          <p style={{ fontSize: "1.1rem", color: "var(--egbe-green-dark)", fontWeight: 500 }}>
             🙏 Com {course.sacerdotisa}
           </p>
         )}
@@ -117,7 +117,7 @@ export default function FCursoDetalhe() {
       {/* Inscrição */}
       {course.paymentLink && course.status !== "finished" && (
         <div className="card" style={{ marginBottom: "1.5rem", background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-          <p style={{ fontSize: "0.9rem", color: "#166534", marginBottom: "0.75rem" }}>
+          <p style={{ fontSize: "1.05rem", color: "#166534", marginBottom: "0.75rem" }}>
             As inscrições estão abertas.
           </p>
           <a
@@ -135,29 +135,29 @@ export default function FCursoDetalhe() {
       {/* Descrição */}
       {course.description && (
         <div className="card" style={{ marginBottom: "1rem" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "0.75rem" }}>Sobre o curso</h2>
-          <div className="rich-editor-content" style={{ fontSize: "0.95rem", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: course.description }} />
+          <h2 style={{ fontSize: "1.35rem", marginBottom: "0.75rem" }}>Sobre o curso</h2>
+          <div className="rich-editor-content" style={{ fontSize: "1.1rem", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: course.description }} />
         </div>
       )}
 
       {/* Objetivo */}
       {course.objective && (
         <div className="card" style={{ marginBottom: "1rem" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "0.75rem" }}>🎯 Objetivo</h2>
-          <div className="rich-editor-content" style={{ fontSize: "0.95rem", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: course.objective }} />
+          <h2 style={{ fontSize: "1.35rem", marginBottom: "0.75rem" }}>🎯 Objetivo</h2>
+          <div className="rich-editor-content" style={{ fontSize: "1.1rem", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: course.objective }} />
         </div>
       )}
 
       {/* Agenda */}
       {daysFilled.length > 0 && (
         <div className="card" style={{ marginBottom: "1rem" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "0.75rem" }}>📅 Agenda</h2>
+          <h2 style={{ fontSize: "1.35rem", marginBottom: "0.75rem" }}>📅 Agenda</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {daysFilled.map((d, i) => (
               <div key={d.id || i} style={{ padding: "0.6rem 0.9rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
-                <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Encontro {i + 1} · {formatDate(d.date)}</span>
+                <span style={{ fontWeight: 600, fontSize: "1.05rem" }}>Encontro {i + 1} · {formatDate(d.date)}</span>
                 {(d.startTime || d.endTime) && (
-                  <span style={{ fontSize: "0.85rem", color: "#666" }}>
+                  <span style={{ fontSize: "1rem", color: "#666" }}>
                     {d.startTime || "—"}{d.endTime ? ` → ${d.endTime}` : ""}
                   </span>
                 )}
@@ -170,23 +170,23 @@ export default function FCursoDetalhe() {
       {/* Módulos — sempre abertos, título + descrição */}
       {(course.modules?.length || 0) > 0 && (
         <div className="card" style={{ marginBottom: "1rem" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "1rem" }}>📚 Módulos</h2>
+          <h2 style={{ fontSize: "1.35rem", marginBottom: "1rem" }}>📚 Módulos</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {course.modules.map((m, i) => {
               const descText = m.description ? m.description.replace(/<[^>]*>/g, "").trim() : "";
               return (
                 <div key={m.id || i} style={{ padding: "1rem 1.1rem", background: "#f9fafb", borderRadius: "10px", border: "1px solid #e5e7eb", borderLeft: "4px solid var(--egbe-green)" }}>
-                  <h3 style={{ fontSize: "1.05rem", marginBottom: "0.5rem", color: "var(--egbe-green-dark)" }}>
+                  <h3 style={{ fontSize: "1.2rem", marginBottom: "0.5rem", color: "var(--egbe-green-dark)" }}>
                     {i + 1}. {m.title || "Sem título"}
                   </h3>
                   {descText ? (
                     <div
                       className="rich-editor-content"
-                      style={{ fontSize: "0.9rem", lineHeight: 1.65, color: "#333" }}
+                      style={{ fontSize: "1.05rem", lineHeight: 1.65, color: "#333" }}
                       dangerouslySetInnerHTML={{ __html: m.description }}
                     />
                   ) : (
-                    <p style={{ fontSize: "0.82rem", color: "#aaa", fontStyle: "italic" }}>Descrição do módulo ainda não cadastrada.</p>
+                    <p style={{ fontSize: "0.95rem", color: "#aaa", fontStyle: "italic" }}>Descrição do módulo ainda não cadastrada.</p>
                   )}
                 </div>
               );
@@ -198,7 +198,7 @@ export default function FCursoDetalhe() {
       {/* Materiais */}
       {(course.materials?.length || 0) > 0 && (
         <div className="card" style={{ marginBottom: "1rem" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "0.75rem" }}>📎 Materiais</h2>
+          <h2 style={{ fontSize: "1.35rem", marginBottom: "0.75rem" }}>📎 Materiais</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {course.materials.map((mat, i) => (
               <a
@@ -213,8 +213,8 @@ export default function FCursoDetalhe() {
                 }}
               >
                 <span style={{ fontSize: "1.1rem" }}>{MATERIAL_ICON[mat.type] || "📄"}</span>
-                <span style={{ flex: 1, fontSize: "0.9rem", fontWeight: 500 }}>{mat.name}</span>
-                <span style={{ fontSize: "0.8rem", color: "var(--egbe-green)", fontWeight: 600 }}>Abrir ↗</span>
+                <span style={{ flex: 1, fontSize: "1.05rem", fontWeight: 500 }}>{mat.name}</span>
+                <span style={{ fontSize: "0.95rem", color: "var(--egbe-green)", fontWeight: 600 }}>Abrir ↗</span>
               </a>
             ))}
           </div>
@@ -224,7 +224,7 @@ export default function FCursoDetalhe() {
       {/* Transmissão / Gravação */}
       {(course.streamYardUrl || course.youtubeVideoId) && (
         <div className="card" style={{ marginBottom: "1rem" }}>
-          <h2 style={{ fontSize: "1.2rem", marginBottom: "0.75rem" }}>🎬 Transmissão</h2>
+          <h2 style={{ fontSize: "1.35rem", marginBottom: "0.75rem" }}>🎬 Transmissão</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {course.streamYardUrl && (
               <a href={course.streamYardUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ textDecoration: "none" }}>
