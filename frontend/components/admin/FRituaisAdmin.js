@@ -172,11 +172,32 @@ const EMPTY_OBRIGACAO = {
   date: new Date().toISOString().split("T")[0],
   ritualTemplate: "bori-normal",
   materiaisCheck: {},
-  materiaisQtd: {},
-  preparoCheck: {},
-  extras: "",
+  materiaisQtd: {},      // legado (string livre)
+  materiaisUnidades: {}, // novo: número de unidades
+  materiaisVolume: {},   // novo: volume/medida
+  materiaisPreparo: {},  // novo: preparo inline por material
+  preparoCheck: {},      // checklist procedural do template
+  preparoExtras: "",     // notas adicionais de preparo (free text)
+  animais: [],           // [{ orixa, qtd, animal, sexo }]
+  extras: "",            // legado — será migrado pra preparoExtras
   notes: "",
 };
+
+// Migra obrigações antigas pro novo formato (com animais e novos campos de material)
+function migrateObrigacao(data) {
+  if (!data || data.type !== "obrigacao") return data;
+  return {
+    ...data,
+    materiaisCheck: data.materiaisCheck || {},
+    materiaisQtd: data.materiaisQtd || {},
+    materiaisUnidades: data.materiaisUnidades || {},
+    materiaisVolume: data.materiaisVolume || {},
+    materiaisPreparo: data.materiaisPreparo || {},
+    preparoCheck: data.preparoCheck || {},
+    preparoExtras: data.preparoExtras || data.extras || "",
+    animais: Array.isArray(data.animais) ? data.animais : [],
+  };
+}
 
 function preceitoEndDate(startDate, days) {
   if (!startDate || !days) return null;
@@ -239,7 +260,8 @@ export default function FRituaisAdmin() {
   }
 
   function openDetail(ev) {
-    setForm(migrateEbo({ ...ev }));
+    const migrated = ev.type === "obrigacao" ? migrateObrigacao({ ...ev }) : migrateEbo({ ...ev });
+    setForm(migrated);
     setSelectedId(ev.id);
     setView("detail");
   }
@@ -376,12 +398,185 @@ export default function FRituaisAdmin() {
 }
 
 // ========================================
+// Tab nav reutilizável (Materiais / Animais / Preparos)
+// ========================================
+const TABS = [
+  { id: "materiais", label: "🛒 Materiais" },
+  { id: "animais", label: "🐦 Animais" },
+  { id: "preparos", label: "🔥 Preparos" },
+];
+
+function RitualTabNav({ active, onChange, color }) {
+  const accent = color || "var(--egbe-green)";
+  const accentDark = color || "var(--egbe-green-dark)";
+  return (
+    <div style={{ display: "flex", gap: "0.25rem", borderBottom: "1px solid #e5e7eb", marginBottom: "0.85rem" }}>
+      {TABS.map((t) => {
+        const isActive = active === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onChange(t.id)}
+            style={{
+              padding: "0.45rem 0.85rem",
+              background: "none",
+              border: "none",
+              borderBottom: isActive ? `2px solid ${accent}` : "2px solid transparent",
+              color: isActive ? accentDark : "#666",
+              fontWeight: isActive ? 700 : 500,
+              cursor: "pointer",
+              marginBottom: "-1px",
+              fontFamily: "inherit",
+              fontSize: "0.85rem",
+            }}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Renderiza a aba de Materiais (5 colunas)
+function MateriaisTab({ tpl, data, onUpdate }) {
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "20px 1.6fr 70px 90px 1.4fr", gap: "0.4rem", padding: "0 0.25rem 0.3rem 0.25rem", fontSize: "0.7rem", fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid #e5e7eb" }}>
+        <span></span>
+        <span>Material</span>
+        <span style={{ textAlign: "center" }}>Qtd</span>
+        <span style={{ textAlign: "center" }}>Volume</span>
+        <span>Preparo</span>
+      </div>
+      {tpl.compra.map((item, i) => {
+        const checked = !!data.materiaisCheck?.[i];
+        const def = parseTemplateQtd(item.qtd);
+        const unidades = data.materiaisUnidades?.[i] !== undefined ? data.materiaisUnidades[i] : def.unidades;
+        const volume = data.materiaisVolume?.[i] !== undefined
+          ? data.materiaisVolume[i]
+          : (data.materiaisQtd?.[i] !== undefined ? data.materiaisQtd[i] : def.volume);
+        const preparoTxt = data.materiaisPreparo?.[i] || "";
+        return (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "20px 1.6fr 70px 90px 1.4fr", gap: "0.4rem", alignItems: "center", padding: "0.35rem 0.25rem", borderBottom: "1px solid #f3f4f6" }}>
+            <input type="checkbox" checked={checked} onChange={() => onUpdate({ ...data, materiaisCheck: { ...data.materiaisCheck, [i]: !checked } })} style={{ accentColor: tpl.cor }} />
+            <span style={{ fontSize: "0.86rem", textDecoration: checked ? "line-through" : "none", color: checked ? "#888" : "#1a1a1a" }}>{item.nome}</span>
+            <input
+              type="number" min="0" value={unidades}
+              onChange={(e) => onUpdate({ ...data, materiaisUnidades: { ...data.materiaisUnidades, [i]: e.target.value === "" ? "" : parseInt(e.target.value, 10) } })}
+              style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }}
+            />
+            <input
+              type="text" value={volume}
+              onChange={(e) => onUpdate({ ...data, materiaisVolume: { ...data.materiaisVolume, [i]: e.target.value } })}
+              placeholder="ml/L"
+              style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }}
+            />
+            <input
+              type="text" value={preparoTxt}
+              onChange={(e) => onUpdate({ ...data, materiaisPreparo: { ...data.materiaisPreparo, [i]: e.target.value } })}
+              placeholder="Notas de preparo deste material..."
+              style={{ width: "100%", padding: "0.22rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem" }}
+            />
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// Renderiza a aba de Animais
+function AnimaisTab({ data, onUpdate, orixas, color }) {
+  const animais = data.animais || [];
+  function addAnimal() {
+    onUpdate({ ...data, animais: [...animais, { orixa: "", qtd: 1, animal: "", sexo: "macho" }] });
+  }
+  function updateAnimal(idx, next) {
+    const list = [...animais]; list[idx] = next;
+    onUpdate({ ...data, animais: list });
+  }
+  function removeAnimal(idx) {
+    onUpdate({ ...data, animais: animais.filter((_, i) => i !== idx) });
+  }
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5rem" }}>
+        <button type="button" onClick={addAnimal} className="btn btn-secondary" style={{ fontSize: "0.78rem", padding: "0.25rem 0.65rem" }}>
+          + Adicionar animal
+        </button>
+      </div>
+      {animais.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 60px 1.4fr 110px 30px", gap: "0.4rem", padding: "0 0.25rem 0.3rem 0.25rem", fontSize: "0.7rem", fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid #e5e7eb" }}>
+          <span>Òrìṣà</span>
+          <span style={{ textAlign: "center" }}>Qtd</span>
+          <span>Animal</span>
+          <span>Sexo</span>
+          <span></span>
+        </div>
+      )}
+      {animais.map((a, ai) => (
+        <div key={ai} style={{ display: "grid", gridTemplateColumns: "1.4fr 60px 1.4fr 110px 30px", gap: "0.4rem", alignItems: "center", padding: "0.35rem 0.25rem", borderBottom: "1px solid #f3f4f6" }}>
+          <select value={a.orixa || ""} onChange={(e) => updateAnimal(ai, { ...a, orixa: e.target.value })} style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", background: "white" }}>
+            <option value="">—</option>
+            {orixas.map((o) => <option key={o.name} value={o.name}>{o.name}</option>)}
+          </select>
+          <input type="number" min="1" value={a.qtd || 1} onChange={(e) => updateAnimal(ai, { ...a, qtd: e.target.value === "" ? "" : parseInt(e.target.value, 10) })} style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }} />
+          <input type="text" value={a.animal || ""} onChange={(e) => updateAnimal(ai, { ...a, animal: e.target.value })} placeholder="Ex: galo, pomba, cabra..." style={{ width: "100%", padding: "0.22rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem" }} />
+          <select value={a.sexo || "macho"} onChange={(e) => updateAnimal(ai, { ...a, sexo: e.target.value })} style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", background: "white" }}>
+            <option value="macho">Macho</option>
+            <option value="femea">Fêmea</option>
+          </select>
+          <button type="button" onClick={() => removeAnimal(ai)} style={{ background: "none", border: "1.5px solid #fecaca", borderRadius: "5px", color: "var(--egbe-red)", cursor: "pointer", padding: "0.2rem 0.3rem", fontSize: "0.72rem" }} title="Remover">✕</button>
+        </div>
+      ))}
+      {animais.length === 0 && (
+        <p style={{ fontSize: "0.78rem", color: "#aaa", fontStyle: "italic", padding: "0.4rem 0.25rem" }}>
+          Nenhum animal adicionado.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Renderiza a aba de Preparos (checklist procedural + notas livres)
+function PreparosTab({ tpl, data, onUpdate }) {
+  return (
+    <div>
+      <h4 style={{ fontSize: "0.92rem", marginBottom: "0.5rem", color: tpl.cor }}>Passos do ritual</h4>
+      {tpl.preparo.map((step, i) => (
+        <label key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0", cursor: "pointer", borderBottom: "1px solid #f3f4f6" }}>
+          <input type="checkbox" checked={!!data.preparoCheck?.[i]} onChange={() => onUpdate({ ...data, preparoCheck: { ...data.preparoCheck, [i]: !data.preparoCheck?.[i] } })} style={{ accentColor: tpl.cor }} />
+          <span style={{ fontSize: "0.86rem", textDecoration: data.preparoCheck?.[i] ? "line-through" : "none", color: data.preparoCheck?.[i] ? "#888" : "#1a1a1a" }}>{step}</span>
+        </label>
+      ))}
+      <div style={{ marginTop: "0.85rem" }}>
+        <label className="label">Notas adicionais de preparo</label>
+        <textarea
+          className="input-field"
+          rows={3}
+          value={data.preparoExtras || ""}
+          onChange={(e) => onUpdate({ ...data, preparoExtras: e.target.value })}
+          placeholder="Observações específicas de preparo deste ritual..."
+          style={{ resize: "vertical" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ========================================
 // Form de criação / edição
 // ========================================
 function RitualForm({ form, setForm, users, orixas, saving, isEditing, isAdmin, onCancel, onSave, onDelete }) {
   const isConsulta = form.type === "consulta";
   const template = !isConsulta ? RITUAIS[form.ritualTemplate] : null;
   const [userSearch, setUserSearch] = useState("");
+  // Aba ativa por ebó (idx → "materiais"|"animais"|"preparos") + aba da obrigação
+  const [eboTabs, setEboTabs] = useState({});
+  const [obrigacaoTab, setObrigacaoTab] = useState("materiais");
+  function getEboTab(idx) { return eboTabs[idx] || "materiais"; }
+  function setEboTab(idx, tab) { setEboTabs((prev) => ({ ...prev, [idx]: tab })); }
 
   const sortedUsers = [...users].sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "", "pt-BR"));
   const selectedUser = users.find((u) => u.id === form.userId);
@@ -413,16 +608,6 @@ function RitualForm({ form, setForm, users, orixas, saving, isEditing, isAdmin, 
   }
   function removeAux(i) {
     setForm({ ...form, odusAuxiliares: (form.odusAuxiliares || []).filter((_, idx) => idx !== i) });
-  }
-
-  function toggleMaterial(idx) {
-    setForm({ ...form, materiaisCheck: { ...form.materiaisCheck, [idx]: !form.materiaisCheck?.[idx] } });
-  }
-  function togglePreparo(idx) {
-    setForm({ ...form, preparoCheck: { ...form.preparoCheck, [idx]: !form.preparoCheck?.[idx] } });
-  }
-  function setMatQtd(idx, val) {
-    setForm({ ...form, materiaisQtd: { ...form.materiaisQtd, [idx]: val } });
   }
 
   return (
@@ -651,133 +836,18 @@ function RitualForm({ form, setForm, users, orixas, saving, isEditing, isAdmin, 
 
                       {tpl && (
                         <>
-                          <h4 style={{ fontSize: "0.92rem", marginBottom: "0.4rem", color: tpl.cor }}>🛒 Materiais</h4>
-                          {/* Header das colunas */}
-                          <div style={{ display: "grid", gridTemplateColumns: "20px 1.6fr 70px 90px 1.4fr", gap: "0.4rem", padding: "0 0.25rem 0.3rem 0.25rem", fontSize: "0.7rem", fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid #e5e7eb" }}>
-                            <span></span>
-                            <span>Material</span>
-                            <span style={{ textAlign: "center" }}>Qtd</span>
-                            <span style={{ textAlign: "center" }}>Volume</span>
-                            <span>Preparo</span>
-                          </div>
-                          {tpl.compra.map((item, i) => {
-                            const checked = !!ebo.materiaisCheck?.[i];
-                            const def = parseTemplateQtd(item.qtd);
-                            const unidades = ebo.materiaisUnidades?.[i] !== undefined ? ebo.materiaisUnidades[i] : def.unidades;
-                            const volume = ebo.materiaisVolume?.[i] !== undefined
-                              ? ebo.materiaisVolume[i]
-                              : (ebo.materiaisQtd?.[i] !== undefined ? ebo.materiaisQtd[i] : def.volume);
-                            const preparoTxt = ebo.materiaisPreparo?.[i] || "";
-                            return (
-                              <div key={i} style={{ display: "grid", gridTemplateColumns: "20px 1.6fr 70px 90px 1.4fr", gap: "0.4rem", alignItems: "center", padding: "0.35rem 0.25rem", borderBottom: "1px solid #f3f4f6" }}>
-                                <input type="checkbox" checked={checked} onChange={() => updateThis({ ...ebo, materiaisCheck: { ...ebo.materiaisCheck, [i]: !checked } })} style={{ accentColor: tpl.cor }} />
-                                <span style={{ fontSize: "0.86rem", textDecoration: checked ? "line-through" : "none", color: checked ? "#888" : "#1a1a1a" }}>{item.nome}</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={unidades}
-                                  onChange={(e) => updateThis({ ...ebo, materiaisUnidades: { ...ebo.materiaisUnidades, [i]: e.target.value === "" ? "" : parseInt(e.target.value, 10) } })}
-                                  style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }}
-                                />
-                                <input
-                                  type="text"
-                                  value={volume}
-                                  onChange={(e) => updateThis({ ...ebo, materiaisVolume: { ...ebo.materiaisVolume, [i]: e.target.value } })}
-                                  placeholder="ml/L"
-                                  style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }}
-                                />
-                                <input
-                                  type="text"
-                                  value={preparoTxt}
-                                  onChange={(e) => updateThis({ ...ebo, materiaisPreparo: { ...ebo.materiaisPreparo, [i]: e.target.value } })}
-                                  placeholder="Notas de preparo deste material..."
-                                  style={{ width: "100%", padding: "0.22rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem" }}
-                                />
-                              </div>
-                            );
-                          })}
+                          <RitualTabNav active={getEboTab(idx)} onChange={(t) => setEboTab(idx, t)} color={tpl.cor} />
+                          {getEboTab(idx) === "materiais" && (
+                            <MateriaisTab tpl={tpl} data={ebo} onUpdate={updateThis} />
+                          )}
+                          {getEboTab(idx) === "animais" && (
+                            <AnimaisTab data={ebo} onUpdate={updateThis} orixas={orixas} color={tpl.cor} />
+                          )}
+                          {getEboTab(idx) === "preparos" && (
+                            <PreparosTab tpl={tpl} data={ebo} onUpdate={updateThis} />
+                          )}
                         </>
                       )}
-
-                      {/* Lista de Animais */}
-                      <div style={{ marginTop: "1rem" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                          <h4 style={{ fontSize: "0.92rem", margin: 0, color: tpl?.cor || "#666" }}>🐦 Animais</h4>
-                          <button
-                            type="button"
-                            onClick={() => updateThis({ ...ebo, animais: [...(ebo.animais || []), { orixa: "", qtd: 1, animal: "", sexo: "macho" }] })}
-                            className="btn btn-secondary"
-                            style={{ fontSize: "0.78rem", padding: "0.25rem 0.65rem" }}
-                          >
-                            + Adicionar animal
-                          </button>
-                        </div>
-                        {(ebo.animais || []).length > 0 && (
-                          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 60px 1.4fr 110px 30px", gap: "0.4rem", padding: "0 0.25rem 0.3rem 0.25rem", fontSize: "0.7rem", fontWeight: 600, color: "#888", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: "1px solid #e5e7eb" }}>
-                            <span>Òrìṣà</span>
-                            <span style={{ textAlign: "center" }}>Qtd</span>
-                            <span>Animal</span>
-                            <span>Sexo</span>
-                            <span></span>
-                          </div>
-                        )}
-                        {(ebo.animais || []).map((a, ai) => {
-                          function updateAnimal(next) {
-                            const list = [...(ebo.animais || [])]; list[ai] = next;
-                            updateThis({ ...ebo, animais: list });
-                          }
-                          function removeAnimal() {
-                            updateThis({ ...ebo, animais: (ebo.animais || []).filter((_, i) => i !== ai) });
-                          }
-                          return (
-                            <div key={ai} style={{ display: "grid", gridTemplateColumns: "1.4fr 60px 1.4fr 110px 30px", gap: "0.4rem", alignItems: "center", padding: "0.35rem 0.25rem", borderBottom: "1px solid #f3f4f6" }}>
-                              <select
-                                value={a.orixa || ""}
-                                onChange={(e) => updateAnimal({ ...a, orixa: e.target.value })}
-                                style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", background: "white" }}
-                              >
-                                <option value="">—</option>
-                                {orixas.map((o) => <option key={o.name} value={o.name}>{o.name}</option>)}
-                              </select>
-                              <input
-                                type="number"
-                                min="1"
-                                value={a.qtd || 1}
-                                onChange={(e) => updateAnimal({ ...a, qtd: e.target.value === "" ? "" : parseInt(e.target.value, 10) })}
-                                style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", textAlign: "center" }}
-                              />
-                              <input
-                                type="text"
-                                value={a.animal || ""}
-                                onChange={(e) => updateAnimal({ ...a, animal: e.target.value })}
-                                placeholder="Ex: galo, pomba, cabra..."
-                                style={{ width: "100%", padding: "0.22rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem" }}
-                              />
-                              <select
-                                value={a.sexo || "macho"}
-                                onChange={(e) => updateAnimal({ ...a, sexo: e.target.value })}
-                                style={{ width: "100%", padding: "0.22rem 0.3rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.78rem", background: "white" }}
-                              >
-                                <option value="macho">Macho</option>
-                                <option value="femea">Fêmea</option>
-                              </select>
-                              <button
-                                type="button"
-                                onClick={removeAnimal}
-                                style={{ background: "none", border: "1.5px solid #fecaca", borderRadius: "5px", color: "var(--egbe-red)", cursor: "pointer", padding: "0.2rem 0.3rem", fontSize: "0.72rem" }}
-                                title="Remover"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          );
-                        })}
-                        {(ebo.animais || []).length === 0 && (
-                          <p style={{ fontSize: "0.78rem", color: "#aaa", fontStyle: "italic", padding: "0.4rem 0.25rem" }}>
-                            Nenhum animal adicionado.
-                          </p>
-                        )}
-                      </div>
                     </div>
                   );
                 })}
@@ -827,47 +897,37 @@ function RitualForm({ form, setForm, users, orixas, saving, isEditing, isAdmin, 
         </>
       ) : (
         <>
-          {/* Obrigação — escolha do template e checklists */}
+          {/* Obrigação — escolha do template */}
           <div className="card" style={{ marginBottom: "1rem" }}>
             <label className="label">Tipo de obrigação</label>
-            <select className="input-field" value={form.ritualTemplate} onChange={(e) => setForm({ ...form, ritualTemplate: e.target.value, materiaisCheck: {}, materiaisQtd: {}, preparoCheck: {} })}>
+            <select
+              className="input-field"
+              value={form.ritualTemplate}
+              onChange={(e) => setForm({
+                ...form,
+                ritualTemplate: e.target.value,
+                materiaisCheck: {}, materiaisQtd: {}, materiaisUnidades: {}, materiaisVolume: {}, materiaisPreparo: {},
+                preparoCheck: {}, preparoExtras: "", animais: [],
+              })}
+            >
               {Object.entries(RITUAIS).map(([key, r]) => <option key={key} value={key}>{r.nome}</option>)}
             </select>
           </div>
 
           {template && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
-              <div className="card">
-                <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>🛒 Materiais</h3>
-                {template.compra.map((item, i) => {
-                  const checked = !!form.materiaisCheck?.[i];
-                  const qtd = form.materiaisQtd?.[i] !== undefined ? form.materiaisQtd[i] : item.qtd;
-                  return (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0", borderBottom: "1px solid #f3f4f6" }}>
-                      <input type="checkbox" checked={checked} onChange={() => toggleMaterial(i)} style={{ accentColor: template.cor, flexShrink: 0 }} />
-                      <span style={{ flex: 1, fontSize: "0.88rem", textDecoration: checked ? "line-through" : "none", color: checked ? "#888" : "#1a1a1a" }}>{item.nome}</span>
-                      <input type="text" value={qtd} onChange={(e) => setMatQtd(i, e.target.value)} style={{ width: "80px", padding: "0.25rem 0.4rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.8rem", textAlign: "center" }} />
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="card">
-                <h3 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>🔥 Preparo</h3>
-                {template.preparo.map((step, i) => (
-                  <label key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0", cursor: "pointer", borderBottom: "1px solid #f3f4f6" }}>
-                    <input type="checkbox" checked={!!form.preparoCheck?.[i]} onChange={() => togglePreparo(i)} style={{ accentColor: template.cor }} />
-                    <span style={{ fontSize: "0.88rem", textDecoration: form.preparoCheck?.[i] ? "line-through" : "none", color: form.preparoCheck?.[i] ? "#888" : "#1a1a1a" }}>{step}</span>
-                  </label>
-                ))}
-              </div>
+            <div className="card" style={{ marginBottom: "1rem", borderLeft: `4px solid ${template.cor}` }}>
+              <RitualTabNav active={obrigacaoTab} onChange={setObrigacaoTab} color={template.cor} />
+              {obrigacaoTab === "materiais" && (
+                <MateriaisTab tpl={template} data={form} onUpdate={(next) => setForm(next)} />
+              )}
+              {obrigacaoTab === "animais" && (
+                <AnimaisTab data={form} onUpdate={(next) => setForm(next)} orixas={orixas} color={template.cor} />
+              )}
+              {obrigacaoTab === "preparos" && (
+                <PreparosTab tpl={template} data={form} onUpdate={(next) => setForm(next)} />
+              )}
             </div>
           )}
-
-          <div className="card" style={{ marginBottom: "1rem" }}>
-            <label className="label">Acréscimos / materiais extras</label>
-            <textarea className="input-field" rows={3} value={form.extras || ""} onChange={(e) => setForm({ ...form, extras: e.target.value })} style={{ resize: "vertical" }} />
-          </div>
         </>
       )}
 
