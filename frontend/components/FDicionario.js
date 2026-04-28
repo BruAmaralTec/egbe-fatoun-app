@@ -22,7 +22,10 @@ const QUICK_PHRASES = [
   "Ẹ káàárọ̀ — Bom dia",
   "Ẹ kú ọ̀sán — Boa tarde",
   "Ẹ kú alẹ́ — Boa noite",
-  "Àbọrú, Àbọyè, Àbọṣíṣe",
+  "Àbọrú, Àbọyè, Àbọṣíṣe — Que o sacrifício seja oferecido, aceito e cumprido",
+  "Ogbó atọ́, àsúre, Ìwọ̀rìwòfún — Longevidade, bençãos e prosperidade",
+  "Àìkú parí ìwà — Que a imortalidade complete o caráter",
+  "Ire ajé, ire ọmọ, ire àìkú — Bençãos de prosperidade, filhos e longevidade",
   "Àṣẹ o! — Que assim seja!",
   "Ìbà Olódùmarè — Reverência ao Criador",
 ];
