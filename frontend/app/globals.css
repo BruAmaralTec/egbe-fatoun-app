@@ -188,6 +188,9 @@ input, textarea, select, [contenteditable] {
 .card:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
+@media (max-width: 480px) {
+  .card { padding: 1rem; border-radius: 10px; }
+}
 
 /* ----------------------------------------
    BADGES DE PERFIL
