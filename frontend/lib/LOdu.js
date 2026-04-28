@@ -46,9 +46,10 @@ export function composeOdu(leftMarks, rightMarks) {
   if (L.id === R.id) return { name: L.name, significance: L.significance, left: L, right: R };
   const shortL = L.name.replace(" Méjì", "");
   const shortR = R.name.replace(" Méjì", "");
+  // Convenção Ifá: lê-se direita → esquerda (lado direito vem primeiro no nome)
   return {
-    name: `${shortL} ${shortR}`,
-    significance: `Composto de ${shortL} + ${shortR}. O sacerdote deve interpretar conforme contexto.`,
+    name: `${shortR} ${shortL}`,
+    significance: `Composto de ${shortR} + ${shortL}. O sacerdote deve interpretar conforme contexto.`,
     left: L,
     right: R,
   };
