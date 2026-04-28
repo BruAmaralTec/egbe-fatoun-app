@@ -39,22 +39,60 @@ async function translateViaGoogle({ text, sourceLang, targetLang }) {
   };
 }
 
+// Considera "tradução não funcionou" quando Google devolve o próprio texto
+// (acontece em pares low-resource como yo↔pt — o sistema da API às vezes
+// não acha rota e ecoa o input).
+function googleEchoed(text, translation) {
+  if (!translation) return true;
+  return translation.trim().toLowerCase() === text.trim().toLowerCase();
+}
+
 async function translate({ text, sourceLang, targetLang }) {
   const involvesYoruba = sourceLang === "yo" || targetLang === "yo";
+  let nllbError = null;
 
-  // Pra pares com Yorùbá, NLLB preserva grafia litúrgica (ẹ/ọ/ṣ + tons)
+  // 1) NLLB pros pares com Yorùbá (preserva grafia litúrgica ẹ/ọ/ṣ + tons)
   if (involvesYoruba && process.env.HF_API_TOKEN) {
     try {
-      return await nllb.translate({ text, sourceLang, targetLang });
+      const r = await nllb.translate({ text, sourceLang, targetLang });
+      console.log(`[translate] NLLB ok (${sourceLang}→${targetLang}, ${text.length} chars)`);
+      return r;
     } catch (err) {
-      // Fallback pro Google se NLLB falhar (cold start estourou timeout, 429, etc.)
-      console.warn("NLLB falhou, usando Google:", err.message);
-      const result = await translateViaGoogle({ text, sourceLang, targetLang });
-      return { ...result, provider: "google-fallback" };
+      nllbError = err.message;
+      console.warn(`[translate] NLLB falhou (${sourceLang}→${targetLang}):`, err.message);
     }
   }
 
-  return translateViaGoogle({ text, sourceLang, targetLang });
+  // 2) Google com source explícito
+  let googleResult;
+  try {
+    googleResult = await translateViaGoogle({ text, sourceLang, targetLang });
+  } catch (err) {
+    console.error(`[translate] Google falhou (${sourceLang}→${targetLang}):`, err.message);
+    if (nllbError) {
+      const e = new Error(`Tradutor indisponível. NLLB: ${nllbError}. Google: ${err.message}`);
+      e.code = 503;
+      throw e;
+    }
+    throw err;
+  }
+
+  // 3) Se Google ecoou o input, tenta auto-detect (sem forçar source)
+  //    — costuma destravar pares low-resource onde o forced source não acha rota
+  if (googleEchoed(text, googleResult.translation)) {
+    console.warn(`[translate] Google ecoou input (${sourceLang}→${targetLang}) — retry com auto-detect`);
+    try {
+      const autoResult = await translateViaGoogle({ text, targetLang });
+      if (!googleEchoed(text, autoResult.translation)) {
+        return { ...autoResult, provider: nllbError ? "google-auto-fallback" : "google-auto" };
+      }
+      console.warn(`[translate] Auto-detect também ecoou — devolvendo resultado original`);
+    } catch (err) {
+      console.warn(`[translate] Auto-detect falhou:`, err.message);
+    }
+  }
+
+  return { ...googleResult, provider: nllbError ? "google-fallback" : "google" };
 }
 
 module.exports = { translate };

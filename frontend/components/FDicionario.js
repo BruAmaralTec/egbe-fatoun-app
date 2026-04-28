@@ -177,6 +177,8 @@ export default function FDicionario() {
               <>🤖 Tradução via <strong>NLLB-200</strong> (Meta) — preserva a grafia Yorùbá com tons e pontos subscritos (ẹ/ọ/ṣ).</>
             ) : provider === "google-fallback" ? (
               <>⚠️ NLLB indisponível no momento — usado Google Translate como fallback (sem pontos subscritos).</>
+            ) : provider === "google-auto" || provider === "google-auto-fallback" ? (
+              <>🔍 Google Translate com auto-detecção do idioma de origem.</>
             ) : (
               <>🌐 Tradução via Google Cloud Translation.</>
             )}
