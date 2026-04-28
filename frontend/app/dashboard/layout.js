@@ -147,7 +147,7 @@ export default function DashboardLayout({ children }) {
             <FNotificationBell />
           </div>
         </header>
-        <main style={{ flex: 1, padding: "1.5rem", background: "#f8f9fa" }}>
+        <main style={{ flex: 1, padding: "2rem", background: "#f8f9fa" }}>
           {children}
         </main>
       </div>
